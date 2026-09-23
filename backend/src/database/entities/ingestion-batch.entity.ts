@@ -54,6 +54,10 @@ export class IngestionBatch {
   @Column({ type: 'varchar', length: 100, nullable: true, name: 'report_family' })
   reportFamily?: string | null;
 
+  @Column({ type: 'varchar', length: 64, nullable: true, name: 'file_hash' })
+  @Index()
+  fileHash?: string | null;
+
   @Column({ type: 'varchar', length: 150, nullable: true, name: 'department_tag' })
   departmentTag?: string | null;
 

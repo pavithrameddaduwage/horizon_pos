@@ -607,7 +607,20 @@ export class UploadComponent {
     ];
     const shortMonths = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
+    const currentQueue = this.fileQueue();
+    let duplicatesSkipped = 0;
+    const newlyAdded: typeof currentQueue = [];
+
     files.forEach((file) => {
+      // Check if file is already in the queue
+      const alreadyInQueue = currentQueue.some((it) => it.name === file.name && it.size === file.size)
+        || newlyAdded.some((it) => it.name === file.name && it.size === file.size);
+
+      if (alreadyInQueue) {
+        duplicatesSkipped++;
+        return;
+      }
+
       const fn = file.name.toLowerCase();
 
       // 1. Detect Vendor
@@ -657,8 +670,16 @@ export class UploadComponent {
       };
       reader.readAsText(file);
 
-      this.fileQueue.update((q) => [...q, queueItem]);
+      newlyAdded.push(queueItem);
     });
+
+    if (newlyAdded.length > 0) {
+      this.fileQueue.update((q) => [...q, ...newlyAdded]);
+    }
+
+    if (duplicatesSkipped > 0) {
+      this.state.showToast(`Skipped ${duplicatesSkipped} duplicate file(s) already in queue`, 'info');
+    }
   }
 
   removeItem(index: number) {

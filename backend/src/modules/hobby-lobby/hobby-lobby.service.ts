@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { createHash } from 'crypto';
 import { HobbyLobbyPOS } from '../../database/entities/hobby-lobby-pos.entity';
 import { IngestionBatch, BatchStatus, RetailerCode } from '../../database/entities/ingestion-batch.entity';
 import { parseHobbyLobbyCSV, HobbyLobbyParseResult } from './hobby-lobby.parser';
@@ -48,6 +49,7 @@ export class HobbyLobbyService {
     totalRows: number;
     validRows: number;
     errorRows: number;
+    isDuplicateReplacement?: boolean;
   }> {
     const parseResult: HobbyLobbyParseResult = parseHobbyLobbyCSV(csvContent, {
       fileName,
@@ -61,6 +63,7 @@ export class HobbyLobbyService {
       throw new Error(`Failed to parse Hobby Lobby CSV: ${parseResult.errors.map(e => e.error).join('; ') || 'No valid rows found'}`);
     }
 
+    const fileHash = createHash('sha256').update(csvContent).digest('hex');
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -70,13 +73,37 @@ export class HobbyLobbyService {
     const finalVendorNumber = vendorOverride || parseResult.detectedVendors[0] || '15371';
     const finalYear = parseResult.detectedYear || new Date().getFullYear();
     const finalMonth = parseResult.detectedMonth || new Date().getMonth() + 1;
+    let isDuplicateReplacement = false;
 
     try {
-      // 1. Create Ingestion Batch
+      // 1. Check for existing duplicate batch (same file hash OR same period/vendor/file)
+      const existingBatch = await queryRunner.manager.findOne(IngestionBatch, {
+        where: [
+          { fileHash },
+          {
+            retailerCode: RetailerCode.HOBBY_LOBBY,
+            vendorNumberTag: finalVendorNumber,
+            reportingYear: finalYear,
+            reportingMonth: finalMonth,
+            fileName,
+          },
+        ],
+      });
+
+      if (existingBatch) {
+        isDuplicateReplacement = true;
+        this.logger.log(
+          `Detected duplicate/replacement ingestion batch ${existingBatch.id} for Vendor ${finalVendorNumber} (${finalMonth}/${finalYear}). Replacing prior records to prevent duplication.`
+        );
+        await queryRunner.manager.delete(IngestionBatch, { id: existingBatch.id });
+      }
+
+      // 2. Create Ingestion Batch
       const batch = queryRunner.manager.create(IngestionBatch, {
         retailerCode: RetailerCode.HOBBY_LOBBY,
         fileName,
         fileSizeBytes,
+        fileHash,
         departmentTag: finalDepartmentTag,
         vendorNumberTag: finalVendorNumber,
         reportingYear: finalYear,
@@ -172,6 +199,7 @@ export class HobbyLobbyService {
         totalRows: parseResult.totalRows,
         validRows: parseResult.validRows,
         errorRows: parseResult.errorRows,
+        isDuplicateReplacement,
       };
     } catch (err: any) {
       this.logger.error(`Transaction failed for Hobby Lobby CSV ingestion: ${err.message}`, err.stack);
