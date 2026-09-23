@@ -1,4 +1,5 @@
-import { prisma } from './prisma';
+import { PrismaClient } from '@prisma/client';
+import { prisma, getDatabaseUrl } from './prisma';
 
 export interface TableStatus {
   tableName: string;
@@ -231,7 +232,38 @@ CREATE INDEX IF NOT EXISTS "idx_msi_department" ON "MsiPOS" ("department");
 CREATE INDEX IF NOT EXISTS "idx_msi_uploaded" ON "MsiPOS" ("uploadedAt");
 `;
 
-let hasBootstrapped = false;
+function getMaintenanceDatabaseUrl(): string {
+  const user = encodeURIComponent(process.env.DW_USER || 'postgres');
+  const password = process.env.DW_PASSWORD ? encodeURIComponent(process.env.DW_PASSWORD) : '';
+  const host = process.env.DW_HOST || 'localhost';
+  const port = process.env.DW_PORT || '5432';
+  const auth = password ? `${user}:${password}` : user;
+  return `postgresql://${auth}@${host}:${port}/postgres?schema=public`;
+}
+
+async function ensureDatabaseExists(databaseName: string) {
+  const maintenanceUrl = getMaintenanceDatabaseUrl();
+  const maintenance = new PrismaClient({
+    datasourceUrl: maintenanceUrl,
+  });
+
+  try {
+    const dbs: Array<{ datname: string }> = await maintenance.$queryRawUnsafe(
+      `SELECT datname FROM pg_database WHERE datname = $1`,
+      databaseName
+    );
+
+    if (dbs.length === 0) {
+      console.log(`[DB] Database "${databaseName}" does not exist, creating...`);
+      await maintenance.$executeRawUnsafe(`CREATE DATABASE "${databaseName}"`);
+      console.log(`[DB] Database "${databaseName}" created successfully.`);
+    }
+  } catch (err: any) {
+    // If maintenance connection fails (e.g. permission or non-postgres default db), skip silently
+  } finally {
+    await maintenance.$disconnect().catch(() => {});
+  }
+}
 
 export async function verifyAndInitDatabase(): Promise<DbHealthResult> {
   const host = process.env.DW_HOST || 'localhost';
@@ -240,7 +272,10 @@ export async function verifyAndInitDatabase(): Promise<DbHealthResult> {
   const user = process.env.DW_USER || 'postgres';
 
   try {
-    // 1. Check basic connection
+    // 0. Ensure target database exists
+    await ensureDatabaseExists(database);
+
+    // 1. Check basic connection to target database
     await prisma.$queryRaw`SELECT 1 as connection_test`;
 
     // 2. Query existing tables in public schema
