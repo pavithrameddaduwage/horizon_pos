@@ -22,7 +22,7 @@ export class MsiPOS {
   @Column({ type: 'uuid' })
   batchId: string;
 
-  @ManyToOne(() => IngestionBatch, (b) => b.msiRows, { onDelete: 'CASCADE' })
+  @ManyToOne(() => IngestionBatch, (b: IngestionBatch) => b.msiRows, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'batchId' })
   batch: IngestionBatch;
 

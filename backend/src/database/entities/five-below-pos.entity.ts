@@ -23,7 +23,7 @@ export class FiveBelowPOS {
   @Column({ type: 'uuid' })
   batchId: string;
 
-  @ManyToOne(() => IngestionBatch, (b) => b.fiveBelowRows, { onDelete: 'CASCADE' })
+  @ManyToOne(() => IngestionBatch, (b: IngestionBatch) => b.fiveBelowRows, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'batchId' })
   batch: IngestionBatch;
 

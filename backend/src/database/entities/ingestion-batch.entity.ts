@@ -88,15 +88,15 @@ export class IngestionBatch {
   @UpdateDateColumn({ type: 'timestamp with time zone' })
   updatedAt: Date;
 
-  @OneToMany(() => HobbyLobbyPOS, (row) => row.batch)
+  @OneToMany(() => HobbyLobbyPOS, (row: HobbyLobbyPOS) => row.batch)
   hobbyLobbyRows: HobbyLobbyPOS[];
 
-  @OneToMany(() => FiveBelowPOS, (row) => row.batch)
+  @OneToMany(() => FiveBelowPOS, (row: FiveBelowPOS) => row.batch)
   fiveBelowRows: FiveBelowPOS[];
 
-  @OneToMany(() => KohlsPOS, (row) => row.batch)
+  @OneToMany(() => KohlsPOS, (row: KohlsPOS) => row.batch)
   kohlsRows: KohlsPOS[];
 
-  @OneToMany(() => MsiPOS, (row) => row.batch)
+  @OneToMany(() => MsiPOS, (row: MsiPOS) => row.batch)
   msiRows: MsiPOS[];
 }

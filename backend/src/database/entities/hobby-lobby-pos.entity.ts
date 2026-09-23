@@ -23,7 +23,7 @@ export class HobbyLobbyPOS {
   @Column({ type: 'uuid' })
   batchId: string;
 
-  @ManyToOne(() => IngestionBatch, (batch) => batch.hobbyLobbyRows, {
+  @ManyToOne(() => IngestionBatch, (batch: IngestionBatch) => batch.hobbyLobbyRows, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'batchId' })

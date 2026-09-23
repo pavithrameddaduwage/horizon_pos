@@ -22,7 +22,7 @@ export class KohlsPOS {
   @Column({ type: 'uuid' })
   batchId: string;
 
-  @ManyToOne(() => IngestionBatch, (b) => b.kohlsRows, { onDelete: 'CASCADE' })
+  @ManyToOne(() => IngestionBatch, (b: IngestionBatch) => b.kohlsRows, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'batchId' })
   batch: IngestionBatch;
 
