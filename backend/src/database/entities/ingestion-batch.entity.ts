@@ -41,31 +41,32 @@ export class IngestionBatch {
     enum: RetailerCode,
     default: RetailerCode.HOBBY_LOBBY,
     nullable: true,
+    name: 'retailer_code',
   })
   retailerCode: RetailerCode;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, default: 'uploaded_pos.csv' })
+  @Column({ type: 'varchar', length: 255, nullable: true, default: 'uploaded_pos.csv', name: 'file_name' })
   fileName?: string | null;
 
-  @Column({ type: 'int', default: 0, nullable: true })
+  @Column({ type: 'int', default: 0, nullable: true, name: 'file_size_bytes' })
   fileSizeBytes?: number;
 
-  @Column({ type: 'varchar', length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true, name: 'report_family' })
   reportFamily?: string | null;
 
-  @Column({ type: 'varchar', length: 150, nullable: true })
+  @Column({ type: 'varchar', length: 150, nullable: true, name: 'department_tag' })
   departmentTag?: string | null;
 
-  @Column({ type: 'varchar', length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true, name: 'vendor_number_tag' })
   vendorNumberTag?: string | null;
 
-  @Column({ type: 'int', default: 0, nullable: true })
+  @Column({ type: 'int', default: 0, nullable: true, name: 'total_rows' })
   totalRows?: number;
 
-  @Column({ type: 'int', default: 0, nullable: true })
+  @Column({ type: 'int', default: 0, nullable: true, name: 'valid_rows' })
   validRows?: number;
 
-  @Column({ type: 'int', default: 0, nullable: true })
+  @Column({ type: 'int', default: 0, nullable: true, name: 'error_rows' })
   errorRows?: number;
 
   @Column({
@@ -73,22 +74,23 @@ export class IngestionBatch {
     enum: BatchStatus,
     default: BatchStatus.PENDING,
     nullable: true,
+    name: 'status',
   })
   status: BatchStatus;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: 'jsonb', nullable: true, name: 'error_summary' })
   errorSummary?: any;
 
-  @Column({ type: 'varchar', length: 100, default: 'portal_user', nullable: true })
+  @Column({ type: 'varchar', length: 100, default: 'portal_user', nullable: true, name: 'uploaded_by' })
   uploadedBy?: string;
 
-  @Column({ type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP', nullable: true })
+  @Column({ type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP', nullable: true, name: 'uploaded_at' })
   uploadedAt?: Date;
 
-  @CreateDateColumn({ type: 'timestamp with time zone' })
+  @CreateDateColumn({ type: 'timestamp with time zone', name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamp with time zone' })
+  @UpdateDateColumn({ type: 'timestamp with time zone', name: 'updated_at' })
   updatedAt: Date;
 
   @OneToMany(() => HobbyLobbyPOS, (row: HobbyLobbyPOS) => row.batch)
