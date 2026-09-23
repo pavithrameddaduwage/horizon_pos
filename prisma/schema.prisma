@@ -1,0 +1,309 @@
+// Prisma Schema for Horizon POS Centralized Portal
+// Multi-Retailer Ingestion: Hobby Lobby, Five Below, Kohl's, and MIS
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RetailerCode {
+  HOBBY_LOBBY
+  FIVE_BELOW
+  KOHLS
+  MIS
+}
+
+enum BatchStatus {
+  PENDING
+  VALIDATING
+  PROCESSING
+  COMPLETED
+  FAILED
+  PARTIALLY_COMPLETED
+}
+
+model IngestionBatch {
+  id              String         @id @default(uuid())
+  retailerCode    RetailerCode
+  fileName        String
+  fileSizeBytes   Int            @default(0)
+  reportFamily    String?        // For Five Below (e.g. BOOKS, PARTY_GAG, CREATE, STATIONARY, TOY)
+  departmentTag   String?        // User or auto-detected department tag
+  totalRows       Int            @default(0)
+  validRows       Int            @default(0)
+  errorRows       Int            @default(0)
+  status          BatchStatus    @default(PENDING)
+  errorSummary    Json?          // Array of error row details or summary stats
+  uploadedBy      String         @default("portal_user")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  hobbyLobbyRows  HobbyLobbyPOS[]
+  fiveBelowRows   FiveBelowPOS[]
+  kohlsRows       KohlsPOS[]
+  misRows         MisPOS[]
+
+  @@index([retailerCode, createdAt])
+  @@index([status])
+}
+
+model Department {
+  id              String         @id @default(uuid())
+  retailerCode    RetailerCode
+  departmentCode  String
+  departmentName  String
+  buyerNumber     String?
+  buyerName       String?
+  createdAt       DateTime       @default(now())
+
+  subDepartments  SubDepartment[]
+  items           Item[]
+
+  @@unique([retailerCode, departmentCode])
+  @@index([retailerCode])
+}
+
+model SubDepartment {
+  id              String         @id @default(uuid())
+  departmentId    String
+  subDeptCode     String
+  subDeptName     String
+  createdAt       DateTime       @default(now())
+
+  department      Department     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@index([departmentId])
+}
+
+model Vendor {
+  id              String         @id @default(uuid())
+  retailerCode    RetailerCode
+  vendorNumber    String
+  vendorName      String
+  createdAt       DateTime       @default(now())
+
+  @@unique([retailerCode, vendorNumber])
+  @@index([retailerCode])
+}
+
+model Buyer {
+  id              String         @id @default(uuid())
+  retailerCode    RetailerCode
+  buyerNumber     String
+  buyerName       String
+  createdAt       DateTime       @default(now())
+
+  @@unique([retailerCode, buyerNumber])
+  @@index([retailerCode])
+}
+
+model Item {
+  id                String       @id @default(uuid())
+  retailerCode      RetailerCode
+  itemNumber        String       // SKU or Item ID
+  vendorStockNumber String?
+  gtin              String?      // UPC/GTIN
+  description       String
+  size              String?
+  color             String?
+  departmentId      String?
+  createdAt         DateTime     @default(now())
+
+  department        Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  @@unique([retailerCode, itemNumber])
+  @@index([gtin])
+}
+
+// -------------------------------------------------------------
+// 1. Hobby Lobby POS Snapshot (Stable 43 Columns)
+// -------------------------------------------------------------
+model HobbyLobbyPOS {
+  id                String          @id @default(uuid())
+  batchId           String
+  company           String?
+  vendorNumber      String
+  vendorName        String
+  buyerNumber       String
+  buyerName         String
+  itemNumber        String
+  itemDescription   String
+  vendorStockNumber String?
+  size              String?
+  color             String?
+  sellDown          Decimal?        @db.Decimal(12, 4)
+  onHand            Int             @default(0)
+  onOrder           Int             @default(0)
+  firstCost         Decimal?        @db.Decimal(12, 4)
+  preprice          Decimal?        @db.Decimal(12, 4)
+  retailPrice       Decimal?        @db.Decimal(12, 4)
+  sales2Yr          Decimal?        @db.Decimal(14, 4)
+  salesLY           Decimal?        @db.Decimal(14, 4)
+  sales12M          Decimal?        @db.Decimal(14, 4)
+  monthlySalesLY    Json?           // {"jan": 0, "feb": 0, ... "dec": 0}
+  monthlySalesCY    Json?           // {"jan": 0, "feb": 0, ... "dec": 0}
+  reportingYear     Int?
+  reportingMonth    Int?
+  createdAt         DateTime        @default(now())
+
+  batch             IngestionBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@index([vendorNumber])
+  @@index([buyerNumber])
+  @@index([itemNumber])
+  @@index([reportingYear, reportingMonth])
+}
+
+// -------------------------------------------------------------
+// 2. Five Below POS Weekly Report (Recurring Families)
+// -------------------------------------------------------------
+model FiveBelowPOS {
+  id                  String          @id @default(uuid())
+  batchId             String
+  reportFamily        String          // BOOKS, PARTY_GAG, CREATE, STATIONARY, TOY, etc.
+  reportDate          String?
+  department          String?
+  subDepartment       String?
+  className           String?
+  subClassName        String?
+  vendorNumber        String?
+  vendorName          String?
+  styleId             String?
+  styleDesc           String?
+  sku                 String?
+  skuDesc             String?
+  gtin                String?
+  vendorCasePack      Int?
+  innerCasePack       Int?
+  firstReceiptDate    String?
+  lastReceiptDate     String?
+  currUnitRetailPrice Decimal?        @db.Decimal(12, 4)
+  itemCost            Decimal?        @db.Decimal(12, 4)
+  landedCost          Decimal?        @db.Decimal(12, 4)
+  salesUWTD           Int?            @default(0)
+  salesDWTD           Decimal?        @db.Decimal(12, 4)
+  salesULCW           Int?            @default(0)
+  salesDLCW           Decimal?        @db.Decimal(12, 4)
+  storeSellThruLCW    Decimal?        @db.Decimal(8, 4)
+  storesWithSalesLCW  Int?            @default(0)
+  storesWithOH        Int?            @default(0)
+  salesUL6W           Int?            @default(0)
+  salesUYTD           Int?            @default(0)
+  salesDYTD           Decimal?        @db.Decimal(14, 4)
+  invOHU              Int?            @default(0)
+  storeOHU            Int?            @default(0)
+  dcOHU               Int?            @default(0)
+  dc3OHU              Int?            @default(0)
+  dc4OHU              Int?            @default(0)
+  dc5OHU              Int?            @default(0)
+  dc6OHU              Int?            @default(0)
+  dc7OHU              Int?            @default(0)
+  totalPackawayOHU    Int?            @default(0)
+  wohLCW              Decimal?        @db.Decimal(8, 2)
+  storeWohLCW         Decimal?        @db.Decimal(8, 2)
+  dcWohLCW            Decimal?        @db.Decimal(8, 2)
+  currOOU             Int?            @default(0)
+  createdAt           DateTime        @default(now())
+
+  batch               IngestionBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@index([reportFamily])
+  @@index([department])
+  @@index([sku])
+  @@index([gtin])
+}
+
+// -------------------------------------------------------------
+// 3. Kohl's POS Records
+// -------------------------------------------------------------
+model KohlsPOS {
+  id                String          @id @default(uuid())
+  batchId           String
+  storeNumber       String
+  storeName         String?
+  vendorNumber      String
+  sku               String
+  upc               String?
+  styleNumber       String?
+  colorCode         String?
+  sizeCode          String?
+  department        String?
+  className         String?
+  subclass          String?
+  posUnits          Int             @default(0)
+  posDollars        Decimal         @db.Decimal(12, 4) @default(0)
+  regularUnits      Int             @default(0)
+  regularDollars    Decimal         @db.Decimal(12, 4) @default(0)
+  markdownUnits     Int             @default(0)
+  markdownDollars   Decimal         @db.Decimal(12, 4) @default(0)
+  returnUnits       Int             @default(0)
+  returnDollars     Decimal         @db.Decimal(12, 4) @default(0)
+  storeOHUnits      Int             @default(0)
+  onOrderUnits      Int             @default(0)
+  inTransitUnits    Int             @default(0)
+  weekEndDate       DateTime?
+  createdAt         DateTime        @default(now())
+
+  batch             IngestionBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@index([storeNumber])
+  @@index([sku])
+  @@index([department])
+}
+
+// -------------------------------------------------------------
+// 4. MIS Enterprise POS Records
+// -------------------------------------------------------------
+model MisPOS {
+  id              String          @id @default(uuid())
+  batchId         String
+  storeId         String
+  registerId      String
+  cashierId       String?
+  shiftId         String?
+  receiptNumber   String
+  lineNumber      Int             @default(1)
+  sku             String
+  description     String?
+  department      String?
+  quantity        Int             @default(1)
+  unitPrice       Decimal         @db.Decimal(12, 4)
+  discountAmount  Decimal         @db.Decimal(12, 4) @default(0)
+  taxAmount       Decimal         @db.Decimal(12, 4) @default(0)
+  totalAmount     Decimal         @db.Decimal(12, 4)
+  tenderType      String?         // CASH, CARD, GIFT_CARD
+  transactionTime DateTime        @default(now())
+  createdAt       DateTime        @default(now())
+
+  batch           IngestionBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@index([storeId])
+  @@index([receiptNumber])
+  @@index([department])
+}
+
+// -------------------------------------------------------------
+// Authentication & B2B API Key Registry
+// -------------------------------------------------------------
+model ApiKey {
+  id            String       @id @default(uuid())
+  keyHash       String       @unique
+  keyPrefix     String       // E.g. "pos_live_3f"
+  name          String       // E.g. "Hobby Lobby Automated B2B Pipe"
+  retailerScope RetailerCode?
+  vendorScope   String?
+  role          String       @default("UPLOADER") // ADMIN, UPLOADER, ANALYST
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  lastUsedAt    DateTime?
+
+  @@index([keyPrefix])
+}
