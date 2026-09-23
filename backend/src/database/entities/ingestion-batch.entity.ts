@@ -40,14 +40,15 @@ export class IngestionBatch {
     type: 'enum',
     enum: RetailerCode,
     default: RetailerCode.HOBBY_LOBBY,
+    nullable: true,
   })
   retailerCode: RetailerCode;
 
-  @Column({ type: 'varchar', length: 255 })
-  fileName: string;
+  @Column({ type: 'varchar', length: 255, nullable: true, default: 'uploaded_pos.csv' })
+  fileName?: string | null;
 
-  @Column({ type: 'int', default: 0 })
-  fileSizeBytes: number;
+  @Column({ type: 'int', default: 0, nullable: true })
+  fileSizeBytes?: number;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   reportFamily?: string | null;
@@ -55,30 +56,31 @@ export class IngestionBatch {
   @Column({ type: 'varchar', length: 150, nullable: true })
   departmentTag?: string | null;
 
-  @Column({ type: 'int', default: 0 })
-  totalRows: number;
+  @Column({ type: 'int', default: 0, nullable: true })
+  totalRows?: number;
 
-  @Column({ type: 'int', default: 0 })
-  validRows: number;
+  @Column({ type: 'int', default: 0, nullable: true })
+  validRows?: number;
 
-  @Column({ type: 'int', default: 0 })
-  errorRows: number;
+  @Column({ type: 'int', default: 0, nullable: true })
+  errorRows?: number;
 
   @Column({
     type: 'enum',
     enum: BatchStatus,
     default: BatchStatus.PENDING,
+    nullable: true,
   })
   status: BatchStatus;
 
   @Column({ type: 'jsonb', nullable: true })
   errorSummary?: any;
 
-  @Column({ type: 'varchar', length: 100, default: 'portal_user' })
-  uploadedBy: string;
+  @Column({ type: 'varchar', length: 100, default: 'portal_user', nullable: true })
+  uploadedBy?: string;
 
-  @Column({ type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP' })
-  uploadedAt: Date;
+  @Column({ type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP', nullable: true })
+  uploadedAt?: Date;
 
   @CreateDateColumn({ type: 'timestamp with time zone' })
   createdAt: Date;

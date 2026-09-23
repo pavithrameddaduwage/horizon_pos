@@ -26,47 +26,47 @@ export class MsiPOS {
   @JoinColumn({ name: 'batchId' })
   batch: IngestionBatch;
 
-  @Column({ type: 'varchar', length: 50 })
-  storeId: string;
-
-  @Column({ type: 'varchar', length: 50 })
-  registerId: string;
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  storeId?: string;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
-  cashierId: string | null;
+  registerId?: string;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
-  shiftId: string | null;
+  cashierId?: string | null;
 
-  @Column({ type: 'varchar', length: 100 })
-  receiptNumber: string;
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  shiftId?: string | null;
 
-  @Column({ type: 'int', default: 1 })
-  lineNumber: number;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  receiptNumber?: string;
 
-  @Column({ type: 'varchar', length: 100 })
-  sku: string;
+  @Column({ type: 'int', default: 1, nullable: true })
+  lineNumber?: number;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  sku?: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  description: string | null;
+  description?: string | null;
 
   @Column({ type: 'varchar', length: 150, nullable: true })
-  department: string | null;
+  department?: string | null;
 
-  @Column({ type: 'int', default: 1 })
-  quantity: number;
+  @Column({ type: 'int', default: 1, nullable: true })
+  quantity?: number;
 
-  @Column({ type: 'decimal', precision: 12, scale: 4 })
-  unitPrice: string;
+  @Column({ type: 'decimal', precision: 12, scale: 4, nullable: true })
+  unitPrice?: string;
 
-  @Column({ type: 'decimal', precision: 12, scale: 4, default: 0 })
-  discountAmount: string;
+  @Column({ type: 'decimal', precision: 12, scale: 4, default: 0, nullable: true })
+  discountAmount?: string;
 
-  @Column({ type: 'decimal', precision: 12, scale: 4, default: 0 })
-  taxAmount: string;
+  @Column({ type: 'decimal', precision: 12, scale: 4, default: 0, nullable: true })
+  taxAmount?: string;
 
-  @Column({ type: 'decimal', precision: 12, scale: 4 })
-  totalAmount: string;
+  @Column({ type: 'decimal', precision: 12, scale: 4, nullable: true })
+  totalAmount?: string;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
   tenderType: string | null; // CASH, CARD, GIFT_CARD

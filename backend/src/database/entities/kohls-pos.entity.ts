@@ -26,71 +26,71 @@ export class KohlsPOS {
   @JoinColumn({ name: 'batchId' })
   batch: IngestionBatch;
 
-  @Column({ type: 'varchar', length: 50 })
-  storeNumber: string;
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  storeNumber?: string;
 
   @Column({ type: 'varchar', length: 150, nullable: true })
-  storeName: string | null;
-
-  @Column({ type: 'varchar', length: 50 })
-  vendorNumber: string;
-
-  @Column({ type: 'varchar', length: 100 })
-  sku: string;
-
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  upc: string | null;
-
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  styleNumber: string | null;
+  storeName?: string | null;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
-  colorCode: string | null;
+  vendorNumber?: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  sku?: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  upc?: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  styleNumber?: string | null;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
-  sizeCode: string | null;
+  colorCode?: string | null;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  sizeCode?: string | null;
 
   @Column({ type: 'varchar', length: 150, nullable: true })
-  department: string | null;
+  department?: string | null;
 
   @Column({ type: 'varchar', length: 150, nullable: true })
-  className: string | null;
+  className?: string | null;
 
   @Column({ type: 'varchar', length: 150, nullable: true })
-  subclass: string | null;
+  subclass?: string | null;
 
-  @Column({ type: 'int', default: 0 })
-  posUnits: number;
+  @Column({ type: 'int', default: 0, nullable: true })
+  posUnits?: number;
 
-  @Column({ type: 'decimal', precision: 12, scale: 4, default: 0 })
-  posDollars: string;
+  @Column({ type: 'decimal', precision: 12, scale: 4, default: 0, nullable: true })
+  posDollars?: string;
 
-  @Column({ type: 'int', default: 0 })
-  regularUnits: number;
+  @Column({ type: 'int', default: 0, nullable: true })
+  regularUnits?: number;
 
-  @Column({ type: 'decimal', precision: 12, scale: 4, default: 0 })
-  regularDollars: string;
+  @Column({ type: 'decimal', precision: 12, scale: 4, default: 0, nullable: true })
+  regularDollars?: string;
 
-  @Column({ type: 'int', default: 0 })
-  markdownUnits: number;
+  @Column({ type: 'int', default: 0, nullable: true })
+  markdownUnits?: number;
 
-  @Column({ type: 'decimal', precision: 12, scale: 4, default: 0 })
-  markdownDollars: string;
+  @Column({ type: 'decimal', precision: 12, scale: 4, default: 0, nullable: true })
+  markdownDollars?: string;
 
-  @Column({ type: 'int', default: 0 })
-  returnUnits: number;
+  @Column({ type: 'int', default: 0, nullable: true })
+  returnUnits?: number;
 
-  @Column({ type: 'decimal', precision: 12, scale: 4, default: 0 })
-  returnDollars: string;
+  @Column({ type: 'decimal', precision: 12, scale: 4, default: 0, nullable: true })
+  returnDollars?: string;
 
-  @Column({ type: 'int', default: 0 })
-  storeOHUnits: number;
+  @Column({ type: 'int', default: 0, nullable: true })
+  storeOHUnits?: number;
 
-  @Column({ type: 'int', default: 0 })
-  onOrderUnits: number;
+  @Column({ type: 'int', default: 0, nullable: true })
+  onOrderUnits?: number;
 
-  @Column({ type: 'int', default: 0 })
-  inTransitUnits: number;
+  @Column({ type: 'int', default: 0, nullable: true })
+  inTransitUnits?: number;
 
   @Column({ type: 'timestamp with time zone', nullable: true })
   weekEndDate: Date | null;

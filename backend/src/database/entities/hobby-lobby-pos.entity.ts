@@ -32,26 +32,26 @@ export class HobbyLobbyPOS {
   @Column({ type: 'varchar', length: 100, nullable: true })
   company?: string | null;
 
-  @Column({ type: 'varchar', length: 50 })
-  vendorNumber: string;
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  vendorNumber?: string;
 
-  @Column({ type: 'varchar', length: 255 })
-  vendorName: string;
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  vendorName?: string;
 
-  @Column({ type: 'varchar', length: 50 })
-  buyerNumber: string;
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  buyerNumber?: string;
 
-  @Column({ type: 'varchar', length: 255 })
-  buyerName: string;
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  buyerName?: string;
 
   @Column({ type: 'varchar', length: 150, nullable: true })
   department?: string | null;
 
-  @Column({ type: 'varchar', length: 100 })
-  itemNumber: string;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  itemNumber?: string;
 
-  @Column({ type: 'text' })
-  itemDescription: string;
+  @Column({ type: 'text', nullable: true })
+  itemDescription?: string;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   vendorStockNumber?: string | null;
