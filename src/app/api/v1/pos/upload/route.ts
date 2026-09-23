@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { posDataStore } from '@/lib/services/pos-ingestion-service';
+import { posMicroserviceGateway } from '@/lib/services/microservices';
 import { RetailerCode, FiveBelowFamily } from '@/lib/types/pos';
 
 export async function POST(req: NextRequest) {
@@ -21,8 +21,8 @@ export async function POST(req: NextRequest) {
       fileContent = await file.text();
 
       const r = formData.get('retailer') as string | null;
-      if (r && ['HOBBY_LOBBY', 'FIVE_BELOW', 'KOHLS', 'MIS'].includes(r)) {
-        retailerOverride = r as RetailerCode;
+      if (r && ['HOBBY_LOBBY', 'FIVE_BELOW', 'KOHLS', 'MSI', 'MIS'].includes(r)) {
+        retailerOverride = (r === 'MIS' ? 'MSI' : r) as RetailerCode;
       }
       const fam = formData.get('family') as string | null;
       if (fam && ['BOOKS', 'PARTY_GAG', 'CREATE', 'STATIONARY', 'TOY'].includes(fam)) {
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       const body = await req.json();
       fileContent = body.fileContent;
       fileName = body.fileName || 'pos_data.csv';
-      retailerOverride = body.retailer;
+      retailerOverride = body.retailer === 'MIS' ? 'MSI' : body.retailer;
       familyOverride = body.family;
       departmentOverride = body.department;
     }
@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File content is empty' }, { status: 400 });
     }
 
-    const { batch, parseResult } = posDataStore.processUpload({
+    // Direct routing to the dedicated microservice
+    const { batch, parseResult } = await posMicroserviceGateway.routeUpload({
       fileContent,
       fileName,
       retailerOverride,
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err: any) {
-    console.error('Upload Error:', err);
+    console.error('[Upload Gateway Error]:', err);
     return NextResponse.json(
       { error: err.message || 'Internal server error processing file' },
       { status: 500 }

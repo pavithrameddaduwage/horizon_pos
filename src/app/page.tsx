@@ -42,10 +42,37 @@ export default function HorizonPOSPortal() {
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<any>(null);
 
-  // Filters
+  // Hobby Lobby Dynamic Filters & State
+  const [hlDepartmentFilter, setHlDepartmentFilter] = useState<string>('ALL');
+  const [hlVendorFilter, setHlVendorFilter] = useState<string>('ALL');
   const [hlBuyerFilter, setHlBuyerFilter] = useState('');
   const [hlSkuFilter, setHlSkuFilter] = useState('');
   const [fbFamilyFilter, setFbFamilyFilter] = useState<string>('ALL');
+
+  // Dynamic Department & Vendor lists from Hobby Lobby data
+  const hlDepartments = React.useMemo(() => {
+    return Array.from(
+      new Set(
+        hlData
+          .map((r) => r.department || (r.buyerNumber ? `Dept ${r.buyerNumber} - ${r.buyerName}` : r.buyerName))
+          .filter(Boolean)
+      )
+    );
+  }, [hlData]);
+
+  const hlVendors = React.useMemo(() => {
+    return Array.from(new Set(hlData.map((r) => r.vendorNumber).filter(Boolean)));
+  }, [hlData]);
+
+  // Filtered Hobby Lobby Data
+  const filteredHlData = hlData.filter((row) => {
+    const deptTag = row.department || (row.buyerNumber ? `Dept ${row.buyerNumber} - ${row.buyerName}` : row.buyerName);
+    if (hlDepartmentFilter !== 'ALL' && deptTag !== hlDepartmentFilter) return false;
+    if (hlVendorFilter !== 'ALL' && row.vendorNumber !== hlVendorFilter) return false;
+    if (hlBuyerFilter && !row.buyerName.toLowerCase().includes(hlBuyerFilter.toLowerCase())) return false;
+    if (hlSkuFilter && !row.itemNumber.toLowerCase().includes(hlSkuFilter.toLowerCase()) && !row.itemDescription.toLowerCase().includes(hlSkuFilter.toLowerCase())) return false;
+    return true;
+  });
 
   // Fetch data
   const fetchData = async () => {
@@ -121,13 +148,6 @@ export default function HorizonPOSPortal() {
       setUploading(false);
     }
   };
-
-  // Filtered Hobby Lobby Data
-  const filteredHlData = hlData.filter((row) => {
-    if (hlBuyerFilter && !row.buyerName.toLowerCase().includes(hlBuyerFilter.toLowerCase())) return false;
-    if (hlSkuFilter && !row.itemNumber.toLowerCase().includes(hlSkuFilter.toLowerCase()) && !row.itemDescription.toLowerCase().includes(hlSkuFilter.toLowerCase())) return false;
-    return true;
-  });
 
   // Filtered Five Below Data
   const filteredFbData = fbData.filter((row) => {
@@ -349,10 +369,10 @@ export default function HorizonPOSPortal() {
                   </div>
                   <ArrowUpRight className="h-4 w-4 text-slate-700 group-hover:text-purple-700 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
                 </div>
-                <h3 className="font-bold text-lg text-slate-950 mt-4 group-hover:text-purple-700 transition-colors">MIS POS</h3>
+                <h3 className="font-bold text-lg text-slate-950 mt-4 group-hover:text-purple-700 transition-colors">MSI POS</h3>
                 <div className="mt-4 pt-3 border-t border-slate-300 flex justify-between text-xs font-semibold">
                   <span className="text-slate-800">Batches</span>
-                  <span className="font-black text-slate-950">{kpis?.retailerBreakdown?.MIS?.batches || 0}</span>
+                  <span className="font-black text-slate-950">{kpis?.retailerBreakdown?.MSI?.batches || kpis?.retailerBreakdown?.MIS?.batches || 0}</span>
                 </div>
               </div>
             </div>
@@ -473,9 +493,9 @@ export default function HorizonPOSPortal() {
 
               <button
                 type="button"
-                onClick={() => { setUploadRetailer('MIS'); setUploadFamily('AUTO'); }}
+                onClick={() => { setUploadRetailer('MSI'); setUploadFamily('AUTO'); }}
                 className={`pos-card p-4 text-left transition-all border-2 ${
-                  uploadRetailer === 'MIS'
+                  uploadRetailer === 'MSI' || uploadRetailer === 'MIS'
                     ? 'border-purple-600 bg-purple-50/50 shadow-md ring-2 ring-purple-500/20'
                     : 'border-slate-300 hover:border-slate-400 bg-white'
                 }`}
@@ -483,7 +503,7 @@ export default function HorizonPOSPortal() {
                 <div className="p-2 rounded-lg bg-purple-100 text-purple-700 w-fit mb-2">
                   <ShoppingBag className="h-4 w-4" />
                 </div>
-                <div className="font-bold text-sm text-slate-950">MIS POS</div>
+                <div className="font-bold text-sm text-slate-950">MSI POS</div>
                 <div className="text-[11px] text-slate-700 font-semibold mt-0.5">Enterprise Feed</div>
               </button>
             </div>
@@ -557,7 +577,7 @@ export default function HorizonPOSPortal() {
                       <option value="HOBBY_LOBBY">Hobby Lobby</option>
                       <option value="FIVE_BELOW">Five Below</option>
                       <option value="KOHLS">Kohl&apos;s</option>
-                      <option value="MIS">MIS</option>
+                      <option value="MSI">MSI</option>
                     </select>
                   </div>
 
@@ -708,56 +728,154 @@ export default function HorizonPOSPortal() {
         {/* ----------------- TAB: HOBBY LOBBY POS ----------------- */}
         {activeTab === 'hobby_lobby' && (
           <div className="space-y-6">
+            {/* Header & Title */}
             <div className="flex items-center justify-between flex-wrap gap-3">
-              <h2 className="text-2xl font-black text-slate-950 tracking-tight">Hobby Lobby</h2>
+              <div>
+                <h2 className="text-2xl font-black text-slate-950 tracking-tight">Hobby Lobby</h2>
+              </div>
+            </div>
 
-              {/* Filters */}
-              <div className="flex items-center space-x-2">
+            {/* Department & Dimension KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="pos-card p-4 bg-gradient-to-br from-white via-blue-50/40 to-blue-100/30 border-blue-200">
+                <div className="text-xs font-bold text-slate-700">Departments Detected</div>
+                <div className="text-2xl font-black text-blue-900 mt-1">
+                  {hlDepartments.length}
+                </div>
+                <div className="text-[11px] font-semibold text-slate-600 mt-0.5 truncate">
+                  {hlDepartments.length > 0 ? `${hlDepartments.slice(0, 2).join(', ')}...` : 'No feeds uploaded yet'}
+                </div>
+              </div>
+
+              <div className="pos-card p-4 bg-gradient-to-br from-white via-slate-50 to-indigo-50/40 border-indigo-200">
+                <div className="text-xs font-bold text-slate-700">Vendors Active</div>
+                <div className="text-2xl font-black text-indigo-900 mt-1">
+                  {hlVendors.length}
+                </div>
+                <div className="text-[11px] font-semibold text-slate-600 mt-0.5">
+                  {hlVendors.length > 0 ? `Vendor #${hlVendors.join(', ')}` : 'No vendors'}
+                </div>
+              </div>
+
+              <div className="pos-card p-4 bg-gradient-to-br from-white via-emerald-50/40 to-emerald-100/30 border-emerald-200">
+                <div className="text-xs font-bold text-slate-700">Total 12M Sales</div>
+                <div className="text-2xl font-black text-emerald-900 mt-1">
+                  ${filteredHlData.reduce((sum, r) => sum + (r.sales12M || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                </div>
+                <div className="text-[11px] font-semibold text-emerald-700 mt-0.5">
+                  Filtered records
+                </div>
+              </div>
+
+              <div className="pos-card p-4 bg-gradient-to-br from-white via-amber-50/40 to-amber-100/30 border-amber-200">
+                <div className="text-xs font-bold text-slate-700">Total Units On Hand</div>
+                <div className="text-2xl font-black text-amber-900 mt-1">
+                  {filteredHlData.reduce((sum, r) => sum + (r.onHand || 0), 0).toLocaleString()}
+                </div>
+                <div className="text-[11px] font-semibold text-amber-700 mt-0.5">
+                  Store & warehouse units
+                </div>
+              </div>
+            </div>
+
+            {/* Dynamic Filters Bar */}
+            <div className="pos-card p-4 flex flex-wrap items-center gap-3 bg-white">
+              {/* Department Dropdown */}
+              <div className="flex-1 min-w-[200px]">
+                <label className="text-[11px] font-bold text-slate-900 block mb-1">
+                  Department / Buyer
+                </label>
+                <select
+                  value={hlDepartmentFilter}
+                  onChange={(e) => setHlDepartmentFilter(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-950 focus:outline-none focus:border-blue-600"
+                >
+                  <option value="ALL">All Departments ({hlDepartments.length})</option>
+                  {hlDepartments.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Vendor Number Dropdown */}
+              <div className="w-48 min-w-[160px]">
+                <label className="text-[11px] font-bold text-slate-900 block mb-1">
+                  Vendor Number
+                </label>
+                <select
+                  value={hlVendorFilter}
+                  onChange={(e) => setHlVendorFilter(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-950 focus:outline-none focus:border-blue-600"
+                >
+                  <option value="ALL">All Vendors ({hlVendors.length})</option>
+                  {hlVendors.map((v) => (
+                    <option key={v} value={v}>
+                      Vendor #{v}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Buyer Search */}
+              <div className="w-48 min-w-[150px]">
+                <label className="text-[11px] font-bold text-slate-900 block mb-1">
+                  Search Buyer
+                </label>
                 <div className="relative">
-                  <Search className="h-3.5 w-3.5 text-slate-700 absolute left-3 top-2.5" />
+                  <Search className="h-3.5 w-3.5 text-slate-500 absolute left-2.5 top-2" />
                   <input
                     type="text"
-                    placeholder="Filter by Buyer..."
+                    placeholder="e.g. Jennifer..."
                     value={hlBuyerFilter}
                     onChange={(e) => setHlBuyerFilter(e.target.value)}
-                    className="bg-white border border-slate-400 rounded-xl pl-8 pr-3 py-1.5 text-xs font-bold text-slate-950 placeholder-slate-500 focus:outline-none focus:border-blue-600 shadow-sm"
+                    className="w-full bg-white border border-slate-300 rounded-xl pl-8 pr-3 py-1.5 text-xs font-bold text-slate-950 placeholder-slate-400 focus:outline-none focus:border-blue-600"
                   />
                 </div>
+              </div>
+
+              {/* SKU Search */}
+              <div className="w-56 min-w-[160px]">
+                <label className="text-[11px] font-bold text-slate-900 block mb-1">
+                  Search Item / SKU / Desc
+                </label>
                 <div className="relative">
-                  <Search className="h-3.5 w-3.5 text-slate-700 absolute left-3 top-2.5" />
+                  <Search className="h-3.5 w-3.5 text-slate-500 absolute left-2.5 top-2" />
                   <input
                     type="text"
-                    placeholder="Filter by SKU..."
+                    placeholder="Item #, Stock #, Name..."
                     value={hlSkuFilter}
                     onChange={(e) => setHlSkuFilter(e.target.value)}
-                    className="bg-white border border-slate-400 rounded-xl pl-8 pr-3 py-1.5 text-xs font-bold text-slate-950 placeholder-slate-500 focus:outline-none focus:border-blue-600 shadow-sm"
+                    className="w-full bg-white border border-slate-300 rounded-xl pl-8 pr-3 py-1.5 text-xs font-bold text-slate-950 placeholder-slate-400 focus:outline-none focus:border-blue-600"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Hobby Lobby Data Grid */}
+            {/* Uploaded Items & Pricing Table */}
             <div className="pos-card overflow-hidden">
               <div className="p-4 border-b border-slate-300 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-950">Records ({filteredHlData.length})</h3>
+                <h3 className="text-sm font-bold text-slate-950">
+                  Uploaded Product Records ({filteredHlData.length})
+                </h3>
               </div>
 
               <div className="overflow-x-auto max-h-[550px] bg-white">
                 <table className="w-full text-left pos-table">
                   <thead>
                     <tr>
-                      <th>Company</th>
-                      <th>Buyer</th>
+                      <th>Department / Buyer</th>
                       <th>Vendor</th>
-                      <th>Item / SKU</th>
+                      <th>Item Number</th>
                       <th>Description</th>
-                      <th>Stock #</th>
+                      <th>Stock Number</th>
                       <th>Size / Color</th>
                       <th>Sell Down</th>
                       <th>On Hand</th>
                       <th>On Order</th>
                       <th>Cost</th>
-                      <th>Price</th>
+                      <th>Retail Price</th>
                       <th>2 YR Sales</th>
                       <th>LY Sales</th>
                       <th>12M Sales</th>
@@ -766,33 +884,46 @@ export default function HorizonPOSPortal() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredHlData.map((row, idx) => (
-                      <tr key={idx}>
-                        <td className="text-xs text-slate-950 font-bold">{row.company}</td>
-                        <td className="text-xs">
-                          <span className="font-black text-blue-800">{row.buyerName}</span>
-                          <span className="text-slate-700 ml-1 font-semibold">({row.buyerNumber})</span>
+                    {filteredHlData.length === 0 ? (
+                      <tr>
+                        <td colSpan={16} className="text-center py-8 text-xs font-semibold text-slate-500">
+                          No uploaded records found. Upload a Hobby Lobby POS CSV in the Upload tab.
                         </td>
-                        <td className="text-xs">
-                          <span className="text-slate-900 font-bold">{row.vendorName}</span>
-                          <span className="text-slate-700 ml-1 font-semibold">({row.vendorNumber})</span>
-                        </td>
-                        <td className="font-mono text-xs text-amber-800 font-black">{row.itemNumber}</td>
-                        <td className="text-xs text-slate-900 font-semibold max-w-[180px] truncate">{row.itemDescription}</td>
-                        <td className="font-mono text-xs text-slate-800 font-bold">{row.vendorStockNumber || '-'}</td>
-                        <td className="text-xs text-slate-800 font-bold">{row.size} / {row.color}</td>
-                        <td className="text-xs font-black text-emerald-800">{row.sellDown}%</td>
-                        <td className="text-xs font-black text-slate-950">{row.onHand.toLocaleString()}</td>
-                        <td className="text-xs text-slate-900 font-bold">{row.onOrder.toLocaleString()}</td>
-                        <td className="text-xs text-slate-900 font-bold">${row.firstCost.toFixed(2)}</td>
-                        <td className="text-xs font-black text-slate-950">${row.retailPrice.toFixed(2)}</td>
-                        <td className="text-xs text-slate-900 font-bold">${row.sales2Yr.toLocaleString(undefined, { minimumFractionDigits: 0 })}</td>
-                        <td className="text-xs text-slate-900 font-bold">${row.salesLY.toLocaleString(undefined, { minimumFractionDigits: 0 })}</td>
-                        <td className="text-xs font-black text-emerald-800">${row.sales12M.toLocaleString(undefined, { minimumFractionDigits: 0 })}</td>
-                        <td className="text-xs font-bold text-slate-900">{row.uploadedBy || 'portal_user'}</td>
-                        <td className="text-xs font-medium text-slate-700">{new Date(row.uploadedAt || new Date()).toLocaleString()}</td>
                       </tr>
-                    ))}
+                    ) : (
+                      filteredHlData.map((row, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="text-xs">
+                            <span className="font-bold text-blue-900 block">
+                              {row.department || (row.buyerNumber ? `Dept ${row.buyerNumber}` : row.buyerName)}
+                            </span>
+                            <span className="text-[11px] text-slate-600 font-semibold">{row.buyerName}</span>
+                          </td>
+                          <td className="text-xs">
+                            <span className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-300 text-slate-800 font-mono font-bold">
+                              #{row.vendorNumber}
+                            </span>
+                            <div className="text-[10px] text-slate-600 font-semibold truncate max-w-[100px]">{row.vendorName}</div>
+                          </td>
+                          <td className="font-mono text-xs text-blue-900 font-black">{row.itemNumber}</td>
+                          <td className="text-xs text-slate-900 font-semibold max-w-[200px] truncate" title={row.itemDescription}>
+                            {row.itemDescription}
+                          </td>
+                          <td className="font-mono text-xs text-slate-700 font-bold">{row.vendorStockNumber || '-'}</td>
+                          <td className="text-xs text-slate-700 font-semibold">{row.size || '-'} {row.color ? `/ ${row.color}` : ''}</td>
+                          <td className="text-xs font-black text-emerald-800">{row.sellDown}%</td>
+                          <td className="text-xs font-black text-slate-950">{row.onHand.toLocaleString()}</td>
+                          <td className="text-xs text-slate-800 font-bold">{row.onOrder.toLocaleString()}</td>
+                          <td className="text-xs text-slate-800 font-semibold">${row.firstCost.toFixed(2)}</td>
+                          <td className="text-xs font-black text-slate-950">${row.retailPrice.toFixed(2)}</td>
+                          <td className="text-xs text-slate-800 font-semibold">${row.sales2Yr.toLocaleString(undefined, { minimumFractionDigits: 0 })}</td>
+                          <td className="text-xs text-slate-800 font-semibold">${row.salesLY.toLocaleString(undefined, { minimumFractionDigits: 0 })}</td>
+                          <td className="text-xs font-black text-emerald-800">${row.sales12M.toLocaleString(undefined, { minimumFractionDigits: 0 })}</td>
+                          <td className="text-xs font-bold text-slate-800">{row.uploadedBy || 'portal_user'}</td>
+                          <td className="text-xs font-medium text-slate-600">{new Date(row.uploadedAt || new Date()).toLocaleString()}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -850,40 +981,48 @@ export default function HorizonPOSPortal() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredFbData.map((row, idx) => (
-                      <tr key={idx}>
-                        <td>
-                          <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-950 border border-emerald-300">
-                            {row.reportFamily}
-                          </span>
+                    {filteredFbData.length === 0 ? (
+                      <tr>
+                        <td colSpan={15} className="text-center py-8 text-xs font-semibold text-slate-500">
+                          No uploaded records found. Upload a Five Below POS CSV in the Upload tab.
                         </td>
-                        <td className="text-xs font-bold text-slate-950">{row.department}</td>
-                        <td className="text-xs">
-                          <span className="font-mono text-amber-800 font-black">{row.sku}</span>
-                          <span className="text-slate-800 block text-[11px] font-bold truncate max-w-[160px]">{row.skuDesc || row.styleDesc}</span>
-                        </td>
-                        <td className="font-mono text-xs text-slate-800 font-bold">{row.gtin || '-'}</td>
-                        <td className="text-xs font-black text-slate-950">${(row.currUnitRetailPrice || 0).toFixed(2)}</td>
-                        <td className="text-xs text-slate-900 font-bold">${(row.itemCost || 0).toFixed(2)}</td>
-                        <td className="text-xs text-slate-900 font-mono font-bold">
-                          {row.salesUWTD}u
-                        </td>
-                        <td className="text-xs text-slate-950 font-mono font-black">
-                          {row.salesULCW}u
-                        </td>
-                        <td className="text-xs font-black text-emerald-800">
-                          {row.storeSellThruLCW ? `${row.storeSellThruLCW}%` : '-'}
-                        </td>
-                        <td className="text-xs font-black text-slate-950">{row.invOHU?.toLocaleString()}</td>
-                        <td className="text-xs text-slate-900 font-bold">{row.storeOHU?.toLocaleString()}</td>
-                        <td className="text-xs font-mono text-blue-800 font-bold">
-                          {row.dc3OHU ? `DC3:${row.dc3OHU} | DC4:${row.dc4OHU}` : `${row.dcOHU || 0}`}
-                        </td>
-                        <td className="text-xs font-black text-amber-800">{row.wohLCW || '-'} wks</td>
-                        <td className="text-xs font-bold text-slate-900">{row.uploadedBy || 'portal_user'}</td>
-                        <td className="text-xs font-medium text-slate-700">{new Date(row.uploadedAt || new Date()).toLocaleString()}</td>
                       </tr>
-                    ))}
+                    ) : (
+                      filteredFbData.map((row, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                          <td>
+                            <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-950 border border-emerald-300">
+                              {row.reportFamily}
+                            </span>
+                          </td>
+                          <td className="text-xs font-bold text-slate-950">{row.department}</td>
+                          <td className="text-xs">
+                            <span className="font-mono text-amber-800 font-black">{row.sku}</span>
+                            <span className="text-slate-800 block text-[11px] font-bold truncate max-w-[160px]">{row.skuDesc || row.styleDesc}</span>
+                          </td>
+                          <td className="font-mono text-xs text-slate-800 font-bold">{row.gtin || '-'}</td>
+                          <td className="text-xs font-black text-slate-950">${(row.currUnitRetailPrice || 0).toFixed(2)}</td>
+                          <td className="text-xs text-slate-900 font-bold">${(row.itemCost || 0).toFixed(2)}</td>
+                          <td className="text-xs text-slate-900 font-mono font-bold">
+                            {row.salesUWTD}u
+                          </td>
+                          <td className="text-xs text-slate-950 font-mono font-black">
+                            {row.salesULCW}u
+                          </td>
+                          <td className="text-xs font-black text-emerald-800">
+                            {row.storeSellThruLCW ? `${row.storeSellThruLCW}%` : '-'}
+                          </td>
+                          <td className="text-xs font-black text-slate-950">{row.invOHU?.toLocaleString()}</td>
+                          <td className="text-xs text-slate-900 font-bold">{row.storeOHU?.toLocaleString()}</td>
+                          <td className="text-xs font-mono text-blue-800 font-bold">
+                            {row.dc3OHU ? `DC3:${row.dc3OHU} | DC4:${row.dc4OHU}` : `${row.dcOHU || 0}`}
+                          </td>
+                          <td className="text-xs font-black text-amber-800">{row.wohLCW || '-'} wks</td>
+                          <td className="text-xs font-bold text-slate-900">{row.uploadedBy || 'portal_user'}</td>
+                          <td className="text-xs font-medium text-slate-700">{new Date(row.uploadedAt || new Date()).toLocaleString()}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>

@@ -1,6 +1,6 @@
 // Type Definitions for Multi-Retailer POS Ingestion Portal
 
-export type RetailerCode = 'HOBBY_LOBBY' | 'FIVE_BELOW' | 'KOHLS' | 'MIS';
+export type RetailerCode = 'HOBBY_LOBBY' | 'FIVE_BELOW' | 'KOHLS' | 'MSI' | 'MIS';
 
 export type FiveBelowFamily = 'BOOKS' | 'PARTY_GAG' | 'CREATE' | 'STATIONARY' | 'TOY' | 'OTHER';
 
@@ -24,13 +24,14 @@ export interface IngestionBatchRecord {
   updatedAt: string;
 }
 
-// Hobby Lobby Row Structure (43 Columns)
+// Hobby Lobby Row Structure (43 Columns / Dynamic Department Mapping)
 export interface HobbyLobbyRow {
   company: string;
   vendorNumber: string;
   vendorName: string;
   buyerNumber: string;
   buyerName: string;
+  department?: string; // e.g. "Dept 120 - JENNIFER PR"
   itemNumber: string;
   itemDescription: string;
   vendorStockNumber: string;
@@ -49,6 +50,7 @@ export interface HobbyLobbyRow {
   monthlySalesCY: Record<string, number>; // { jan, feb, ... dec }
   reportingYear?: number;
   reportingMonth?: number;
+  reportingMonthName?: string; // e.g. "August"
   uploadedBy?: string;
   uploadedAt?: string;
 }
@@ -131,8 +133,8 @@ export interface KohlsRow {
   uploadedAt?: string;
 }
 
-// MIS Enterprise POS Row Structure
-export interface MisRow {
+// MSI Enterprise POS Row Structure
+export interface MsiRow {
   storeId: string;
   registerId: string;
   cashierId?: string;
@@ -152,6 +154,9 @@ export interface MisRow {
   uploadedBy?: string;
   uploadedAt?: string;
 }
+
+// Alias for backward compatibility
+export type MisRow = MsiRow;
 
 export interface ParseResult<T> {
   success: boolean;

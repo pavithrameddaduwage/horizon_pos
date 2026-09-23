@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { posDataStore } from '@/lib/services/pos-ingestion-service';
+import { posMicroserviceGateway } from '@/lib/services/microservices';
 
 export async function GET() {
-  const kpis = posDataStore.getKPIs();
+  const kpis = posMicroserviceGateway.getAggregatedKPIs();
   return NextResponse.json({ kpis });
 }

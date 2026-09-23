@@ -1,5 +1,5 @@
 // Prisma Schema for Horizon POS Centralized Portal
-// Multi-Retailer Ingestion: Hobby Lobby, Five Below, Kohl's, and MIS
+// Multi-Retailer Ingestion: Hobby Lobby, Five Below, Kohl's, and MSI
 
 generator client {
   provider = "prisma-client-js"
@@ -14,6 +14,7 @@ enum RetailerCode {
   HOBBY_LOBBY
   FIVE_BELOW
   KOHLS
+  MSI
   MIS
 }
 
@@ -46,7 +47,7 @@ model IngestionBatch {
   hobbyLobbyRows  HobbyLobbyPOS[]
   fiveBelowRows   FiveBelowPOS[]
   kohlsRows       KohlsPOS[]
-  misRows         MisPOS[]
+  msiRows         MsiPOS[]
 
   @@index([retailerCode, uploadedAt])
   @@index([status])
@@ -141,6 +142,7 @@ model HobbyLobbyPOS {
   vendorName        String
   buyerNumber       String
   buyerName         String
+  department        String?         // E.g. "Dept 120 - JENNIFER PR"
   itemNumber        String
   itemDescription   String
   vendorStockNumber String?
@@ -279,9 +281,9 @@ model KohlsPOS {
 }
 
 // -------------------------------------------------------------
-// 4. MIS Enterprise POS Records
+// 4. MSI Enterprise POS Records
 // -------------------------------------------------------------
-model MisPOS {
+model MsiPOS {
   id              String          @id @default(uuid())
   batchId         String
   storeId         String
