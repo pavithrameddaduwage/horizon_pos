@@ -60,6 +60,12 @@ export class IngestionBatch {
   @Column({ type: 'varchar', length: 100, nullable: true, name: 'vendor_number_tag' })
   vendorNumberTag?: string | null;
 
+  @Column({ type: 'int', nullable: true, name: 'reporting_year' })
+  reportingYear?: number | null;
+
+  @Column({ type: 'int', nullable: true, name: 'reporting_month' })
+  reportingMonth?: number | null;
+
   @Column({ type: 'int', default: 0, nullable: true, name: 'total_rows' })
   totalRows?: number;
 

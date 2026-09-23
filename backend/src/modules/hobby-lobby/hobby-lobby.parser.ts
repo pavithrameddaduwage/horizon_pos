@@ -25,17 +25,20 @@ function cleanNumber(val: any): number {
   return isNegative ? -num : num;
 }
 
-export function extractHobbyLobbyMetadataFromFileName(fileName?: string): {
+export function extractHobbyLobbyMetadataFromFileName(fileName?: string, csvContentSnippet?: string): {
   month?: number;
   monthName?: string;
   year?: number;
   vendorNumber?: string;
 } {
-  if (!fileName) return {};
-  const fn = fileName.toLowerCase();
+  const fn = (fileName || '').toLowerCase();
+  const snippet = (csvContentSnippet || '').slice(0, 1500).toLowerCase();
 
   let detectedMonth: number | undefined;
   let detectedMonthName: string | undefined;
+  let detectedYear: number | undefined;
+
+  // 1. Check full month names in filename
   MONTH_NAMES.forEach((m, idx) => {
     if (fn.includes(m)) {
       detectedMonth = idx + 1;
@@ -43,10 +46,53 @@ export function extractHobbyLobbyMetadataFromFileName(fileName?: string): {
     }
   });
 
-  const yearMatch = fn.match(/\b(202[0-9])\b/);
-  const detectedYear = yearMatch ? parseInt(yearMatch[1], 10) : undefined;
+  // 2. Check 3-letter month abbreviations in filename (e.g., _jan_, -oct-, hl_nov_)
+  if (!detectedMonth) {
+    MONTH_KEYS.forEach((m, idx) => {
+      const reg = new RegExp(`(^|[^a-z])${m}([^a-z]|$)`, 'i');
+      if (reg.test(fn)) {
+        detectedMonth = idx + 1;
+        detectedMonthName = MONTH_NAMES[idx].charAt(0).toUpperCase() + MONTH_NAMES[idx].slice(1);
+      }
+    });
+  }
 
-  const vendorMatch = fn.match(/vendor[\s_-]*([0-9]{4,7})/i);
+  // 3. Check year pattern in filename (e.g. 2018-2035)
+  const yearMatch = fn.match(/\b(20[1-3][0-9])\b/) || fn.match(/[_\-\.](20[1-3][0-9])[_\-\.]/);
+  if (yearMatch) {
+    detectedYear = parseInt(yearMatch[1], 10);
+  }
+
+  // 4. Check numeric format like 2023_08, 2023-08, 202308
+  if (!detectedMonth && detectedYear) {
+    const numMonthAfter = fn.match(new RegExp(`${detectedYear}[_\\-]?([0-1][0-9])`));
+    if (numMonthAfter) {
+      const mNum = parseInt(numMonthAfter[1], 10);
+      if (mNum >= 1 && mNum <= 12) {
+        detectedMonth = mNum;
+        detectedMonthName = MONTH_NAMES[mNum - 1].charAt(0).toUpperCase() + MONTH_NAMES[mNum - 1].slice(1);
+      }
+    }
+  }
+
+  // 5. If not found in filename, inspect header / first lines snippet
+  if (!detectedYear && snippet) {
+    const snippetYear = snippet.match(/\b(20[1-3][0-9])\b/);
+    if (snippetYear) {
+      detectedYear = parseInt(snippetYear[1], 10);
+    }
+  }
+  if (!detectedMonth && snippet) {
+    MONTH_NAMES.forEach((m, idx) => {
+      if (snippet.includes(m)) {
+        detectedMonth = idx + 1;
+        detectedMonthName = m.charAt(0).toUpperCase() + m.slice(1);
+      }
+    });
+  }
+
+  // Vendor Number extraction (e.g. vendor 15371, vendor_15529, 15371)
+  const vendorMatch = fn.match(/vendor[\s_-]*([0-9]{4,7})/i) || fn.match(/\b(15[0-9]{3})\b/);
   const detectedVendor = vendorMatch ? vendorMatch[1] : undefined;
 
   return {
@@ -113,6 +159,8 @@ export interface HobbyLobbyParseResult {
   retailer: 'HOBBY_LOBBY';
   detectedVendors: string[];
   detectedDepartments: string[];
+  detectedYear?: number;
+  detectedMonth?: number;
   totalRows: number;
   validRows: number;
   errorRows: number;
@@ -128,17 +176,21 @@ export function parseHobbyLobbyCSV(
     fileName?: string;
     departmentOverride?: string;
     vendorOverride?: string;
+    yearOverride?: number;
+    monthOverride?: number;
   }
 ): HobbyLobbyParseResult {
-  const meta = extractHobbyLobbyMetadataFromFileName(options?.fileName);
-  const effectiveYear = meta.year || options?.defaultYear || new Date().getFullYear();
-  const effectiveMonth = meta.month || options?.defaultMonth || new Date().getMonth() + 1;
+  const meta = extractHobbyLobbyMetadataFromFileName(options?.fileName, csvContent);
+  const effectiveYear = options?.yearOverride || meta.year || options?.defaultYear || new Date().getFullYear();
+  const effectiveMonth = options?.monthOverride || meta.month || options?.defaultMonth || new Date().getMonth() + 1;
 
   const result: HobbyLobbyParseResult = {
     success: true,
     retailer: 'HOBBY_LOBBY',
     detectedVendors: [],
     detectedDepartments: [],
+    detectedYear: effectiveYear,
+    detectedMonth: effectiveMonth,
     totalRows: 0,
     validRows: 0,
     errorRows: 0,

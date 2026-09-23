@@ -11,6 +11,8 @@ export interface IngestionBatchRecord {
   errorRows: number;
   departmentTag?: string;
   vendorNumberTag?: string;
+  reportingYear?: number;
+  reportingMonth?: number;
   status: BatchStatus;
   errorSummary?: Array<{ row: number; column?: string; error: string; rawData?: any }>;
   uploadedBy: string;
@@ -112,6 +114,8 @@ export interface UploadResponse {
   retailerCode?: RetailerCode;
   vendorNumber?: string;
   departmentTag?: string;
+  reportingYear?: number;
+  reportingMonth?: number;
   totalRows?: number;
   validRows?: number;
   errorRows?: number;

@@ -200,9 +200,46 @@ import { UploadResponse } from '../../core/models/pos.model';
                 <input 
                   type="text" 
                   class="input-control" 
-                  placeholder="Optional vendor number" 
+                  placeholder="Auto-extracted from file or type here" 
                   [(ngModel)]="vendorNumber" />
               </div>
+
+              <!-- Reporting Period (Year & Month) -->
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
+                    Reporting Year
+                  </label>
+                  <select class="input-control" [(ngModel)]="selectedYear">
+                    <option value="AUTO">Auto-Detect</option>
+                    @for (y of availableYears; track y) {
+                      <option [value]="y">{{ y }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
+                    Reporting Month
+                  </label>
+                  <select class="input-control" [(ngModel)]="selectedMonth">
+                    <option value="AUTO">Auto-Detect</option>
+                    @for (m of availableMonths; track m.value) {
+                      <option [value]="m.value">{{ m.name }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+
+              <!-- Detected Period Badge if found -->
+              @if (detectedPeriodLabel()) {
+                <div class="detected-badge flex items-center gap-1.5">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <span>{{ detectedPeriodLabel() }}</span>
+                </div>
+              }
 
               <!-- Submit Button -->
               <button 
@@ -225,7 +262,7 @@ import { UploadResponse } from '../../core/models/pos.model';
             </div>
           </div>
 
-          <!-- Success / Result Card (matching Image 2 without batch number) -->
+          <!-- Success / Result Card -->
           @if (uploadResult()) {
             <div class="success-result-box animate-fade-in">
               <div class="flex items-center gap-2" style="margin-bottom: 0.85rem;">
@@ -244,6 +281,10 @@ import { UploadResponse } from '../../core/models/pos.model';
                 <div class="flex items-center justify-between">
                   <span style="color: #475569; font-weight: 600;">Vendor Number:</span>
                   <span style="color: #0f172a; font-weight: 800;">{{ uploadResult()?.vendorNumber || vendorNumber || 'Auto-Extracted' }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span style="color: #475569; font-weight: 600;">Reporting Period:</span>
+                  <span style="color: #2563eb; font-weight: 800;">{{ formatPeriod(uploadResult()?.reportingMonth, uploadResult()?.reportingYear) }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                   <span style="color: #475569; font-weight: 600;">Valid Rows:</span>
@@ -290,26 +331,14 @@ import { UploadResponse } from '../../core/models/pos.model';
       font-size: 0.75rem;
       font-weight: 700;
     }
-    .dept-preset-pill {
-      background: #f8fafc;
-      color: #475569;
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      padding: 0.15rem 0.5rem;
-      font-size: 0.6875rem;
+    .detected-badge {
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.75rem;
       font-weight: 700;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .dept-preset-pill:hover {
-      background: #f1f5f9;
-      color: #1e293b;
-      border-color: #cbd5e1;
-    }
-    .dept-preset-pill.active {
-      background: #eff6ff;
-      color: #2563eb;
-      border-color: #93c5fd;
     }
     .code-preview-box {
       background: #090d16;
@@ -340,9 +369,28 @@ export class UploadComponent {
   readonly fileContent = signal<string>('');
   readonly uploading = signal(false);
   readonly uploadResult = signal<UploadResponse | null>(null);
+  readonly detectedPeriodLabel = signal<string>('');
 
   selectedRetailer: string = 'AUTO';
   vendorNumber: string = '';
+  selectedYear: string = 'AUTO';
+  selectedMonth: string = 'AUTO';
+
+  readonly availableYears = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018];
+  readonly availableMonths = [
+    { value: '1', name: 'January' },
+    { value: '2', name: 'February' },
+    { value: '3', name: 'March' },
+    { value: '4', name: 'April' },
+    { value: '5', name: 'May' },
+    { value: '6', name: 'June' },
+    { value: '7', name: 'July' },
+    { value: '8', name: 'August' },
+    { value: '9', name: 'September' },
+    { value: '10', name: 'October' },
+    { value: '11', name: 'November' },
+    { value: '12', name: 'December' },
+  ];
 
   setRetailer(code: string) {
     this.selectedRetailer = code;
@@ -376,9 +424,11 @@ export class UploadComponent {
   private processFile(file: File) {
     this.selectedFile.set(file);
     this.uploadResult.set(null);
+    this.detectedPeriodLabel.set('');
 
-    // If filename has vendor number clue, pre-populate if empty
     const fn = file.name.toLowerCase();
+
+    // 1. Detect Vendor Number from filename
     if (!this.vendorNumber) {
       const vMatch = fn.match(/(15371|15529|15400|15420|[0-9]{5})/);
       if (vMatch) {
@@ -386,12 +436,83 @@ export class UploadComponent {
       }
     }
 
+    // 2. Detect Year & Month from filename
+    const monthNames = [
+      'january', 'february', 'march', 'april', 'may', 'june',
+      'july', 'august', 'september', 'october', 'november', 'december'
+    ];
+    let foundMonth: number | undefined;
+    let foundYear: number | undefined;
+
+    monthNames.forEach((m, idx) => {
+      if (fn.includes(m)) {
+        foundMonth = idx + 1;
+      }
+    });
+
+    if (!foundMonth) {
+      const shortMonths = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+      shortMonths.forEach((m, idx) => {
+        const reg = new RegExp(`(^|[^a-z])${m}([^a-z]|$)`, 'i');
+        if (reg.test(fn)) {
+          foundMonth = idx + 1;
+        }
+      });
+    }
+
+    const yMatch = fn.match(/\b(20[1-3][0-9])\b/);
+    if (yMatch) {
+      foundYear = parseInt(yMatch[1], 10);
+    }
+
+    if (foundMonth || foundYear) {
+      const mName = foundMonth ? monthNames[foundMonth - 1].charAt(0).toUpperCase() + monthNames[foundMonth - 1].slice(1) : '';
+      const label = `Detected Period: ${mName} ${foundYear || ''}`.trim();
+      this.detectedPeriodLabel.set(label);
+      if (foundYear) this.selectedYear = foundYear.toString();
+      if (foundMonth) this.selectedMonth = foundMonth.toString();
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
       this.fileContent.set(text);
+
+      // If year/month was not detected in filename, check first lines of text
+      if ((!foundYear || !foundMonth) && text) {
+        const snippet = text.slice(0, 1500).toLowerCase();
+        if (!foundYear) {
+          const sYearMatch = snippet.match(/\b(20[1-3][0-9])\b/);
+          if (sYearMatch) {
+            foundYear = parseInt(sYearMatch[1], 10);
+            this.selectedYear = foundYear.toString();
+          }
+        }
+        if (!foundMonth) {
+          monthNames.forEach((m, idx) => {
+            if (snippet.includes(m)) {
+              foundMonth = idx + 1;
+              this.selectedMonth = foundMonth.toString();
+            }
+          });
+        }
+        if (foundMonth || foundYear) {
+          const mName = foundMonth ? monthNames[foundMonth - 1].charAt(0).toUpperCase() + monthNames[foundMonth - 1].slice(1) : '';
+          this.detectedPeriodLabel.set(`Detected: ${mName} ${foundYear || ''}`.trim());
+        }
+      }
     };
     reader.readAsText(file);
+  }
+
+  formatPeriod(month?: number, year?: number): string {
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const m = month ? monthNames[month - 1] : (this.selectedMonth !== 'AUTO' ? monthNames[parseInt(this.selectedMonth, 10) - 1] : '');
+    const y = year || (this.selectedYear !== 'AUTO' ? this.selectedYear : new Date().getFullYear());
+    return m ? `${m} ${y}` : `${y}`;
   }
 
   lineCount(): number {
@@ -410,12 +531,17 @@ export class UploadComponent {
     this.uploading.set(true);
     this.uploadResult.set(null);
 
+    const yearNum = this.selectedYear !== 'AUTO' ? parseInt(this.selectedYear, 10) : undefined;
+    const monthNum = this.selectedMonth !== 'AUTO' ? parseInt(this.selectedMonth, 10) : undefined;
+
     this.api
       .uploadPosData({
         fileContent: this.fileContent(),
         fileName: this.selectedFile()?.name || 'pos_file.csv',
         retailerCode: this.selectedRetailer !== 'AUTO' ? this.selectedRetailer : undefined,
         vendorNumber: this.vendorNumber.trim() || undefined,
+        reportingYear: yearNum,
+        reportingMonth: monthNum,
       })
       .subscribe({
         next: (res) => {

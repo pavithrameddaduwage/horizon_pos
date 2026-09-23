@@ -159,6 +159,8 @@ export class PosApiService {
     vendorNumber?: string;
     departmentTag?: string;
     familyOverride?: string;
+    reportingYear?: number;
+    reportingMonth?: number;
   }): Observable<UploadResponse> {
     return this.http.post<UploadResponse>(`${this.baseUrl}/upload`, payload).pipe(
       catchError((err) => {

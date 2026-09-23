@@ -40,6 +40,8 @@ export class UploadGatewayController {
     const familyOverride = body.familyOverride || body.family;
     const departmentTag = body.departmentTag || body.department;
     const vendorNumber = body.vendorNumber || body.vendorTag || body.vendor;
+    const yearOverride = body.reportingYear || body.year ? parseInt(body.reportingYear || body.year, 10) : undefined;
+    const monthOverride = body.reportingMonth || body.month ? parseInt(body.reportingMonth || body.month, 10) : undefined;
     const uploadedBy = body.uploadedBy || 'portal_user';
 
     return this.uploadGatewayService.processUpload(
@@ -51,6 +53,8 @@ export class UploadGatewayController {
       familyOverride && familyOverride !== 'AUTO' ? familyOverride : undefined,
       departmentTag && departmentTag.trim().length > 0 ? departmentTag.trim() : undefined,
       vendorNumber && vendorNumber.trim().length > 0 ? vendorNumber.trim() : undefined,
+      yearOverride && !isNaN(yearOverride) ? yearOverride : undefined,
+      monthOverride && !isNaN(monthOverride) ? monthOverride : undefined,
     );
   }
 }

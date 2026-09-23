@@ -35,17 +35,27 @@ export class HobbyLobbyService {
     uploadedBy: string = 'portal_user',
     departmentOverride?: string,
     vendorOverride?: string,
+    yearOverride?: number,
+    monthOverride?: number,
   ): Promise<{
     batchId: string;
     retailerCode: RetailerCode;
     vendorNumber?: string;
     departmentTag?: string;
+    reportingYear?: number;
+    reportingMonth?: number;
     success: boolean;
     totalRows: number;
     validRows: number;
     errorRows: number;
   }> {
-    const parseResult: HobbyLobbyParseResult = parseHobbyLobbyCSV(csvContent, { fileName, departmentOverride, vendorOverride });
+    const parseResult: HobbyLobbyParseResult = parseHobbyLobbyCSV(csvContent, {
+      fileName,
+      departmentOverride,
+      vendorOverride,
+      yearOverride,
+      monthOverride,
+    });
 
     if (!parseResult.success || parseResult.data.length === 0) {
       throw new Error(`Failed to parse Hobby Lobby CSV: ${parseResult.errors.map(e => e.error).join('; ') || 'No valid rows found'}`);
@@ -58,6 +68,8 @@ export class HobbyLobbyService {
     const uploadedAt = new Date();
     const finalDepartmentTag = departmentOverride || parseResult.detectedDepartments.join(', ') || 'General';
     const finalVendorNumber = vendorOverride || parseResult.detectedVendors[0] || '15371';
+    const finalYear = parseResult.detectedYear || new Date().getFullYear();
+    const finalMonth = parseResult.detectedMonth || new Date().getMonth() + 1;
 
     try {
       // 1. Create Ingestion Batch
@@ -67,6 +79,8 @@ export class HobbyLobbyService {
         fileSizeBytes,
         departmentTag: finalDepartmentTag,
         vendorNumberTag: finalVendorNumber,
+        reportingYear: finalYear,
+        reportingMonth: finalMonth,
         totalRows: parseResult.totalRows,
         validRows: parseResult.validRows,
         errorRows: parseResult.errorRows,
@@ -152,6 +166,8 @@ export class HobbyLobbyService {
         retailerCode: RetailerCode.HOBBY_LOBBY,
         vendorNumber: finalVendorNumber,
         departmentTag: finalDepartmentTag,
+        reportingYear: finalYear,
+        reportingMonth: finalMonth,
         success: true,
         totalRows: parseResult.totalRows,
         validRows: parseResult.validRows,
