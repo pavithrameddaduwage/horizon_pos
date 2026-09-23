@@ -56,6 +56,9 @@ export class IngestionBatch {
   @Column({ type: 'varchar', length: 150, nullable: true })
   departmentTag?: string | null;
 
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  vendorNumberTag?: string | null;
+
   @Column({ type: 'int', default: 0, nullable: true })
   totalRows?: number;
 

@@ -60,13 +60,14 @@ export class UploadGatewayService {
     uploadedBy: string = 'portal_user',
     familyOverride?: any,
     departmentOverride?: string,
+    vendorOverride?: string,
   ) {
     const targetRetailer = retailerCodeOverride || this.detectRetailer(csvContent, fileName);
-    this.logger.log(`Processing upload for retailer: ${targetRetailer}, file: ${fileName} (${fileSizeBytes} bytes), department: ${departmentOverride || 'auto'}`);
+    this.logger.log(`Processing upload for retailer: ${targetRetailer}, file: ${fileName} (${fileSizeBytes} bytes), vendor: ${vendorOverride || 'auto'}, dept: ${departmentOverride || 'auto'}`);
 
     switch (targetRetailer) {
       case RetailerCode.HOBBY_LOBBY:
-        return this.hobbyLobbyService.ingestCsv(csvContent, fileName, fileSizeBytes, uploadedBy, departmentOverride);
+        return this.hobbyLobbyService.ingestCsv(csvContent, fileName, fileSizeBytes, uploadedBy, departmentOverride, vendorOverride);
 
       case RetailerCode.FIVE_BELOW:
         return this.fiveBelowService.ingestCsv(csvContent, fileName, fileSizeBytes, familyOverride, uploadedBy);

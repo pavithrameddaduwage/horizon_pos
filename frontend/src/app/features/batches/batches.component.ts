@@ -21,7 +21,7 @@ import { StateService } from '../../core/services/state.service';
             <thead>
               <tr>
                 <th style="padding-left: 1.5rem;">FILENAME</th>
-                <th>FAMILY / DEPT</th>
+                <th>VENDOR / FAMILY</th>
                 <th>TOTAL ROWS</th>
                 <th>VALID ROWS</th>
                 <th>ERROR ROWS</th>
@@ -37,7 +37,7 @@ import { StateService } from '../../core/services/state.service';
                     {{ batch.fileName }}
                   </td>
                   <td style="color: #334155; font-weight: 600;">
-                    {{ batch.departmentTag || 'Dept 117 - SAUNY SHEDECK' }}
+                    {{ batch.vendorNumberTag ? ('Vendor ' + batch.vendorNumberTag) : (batch.departmentTag || 'Vendor 15371') }}
                   </td>
                   <td style="color: #0f172a; font-weight: 600;">
                     {{ batch.totalRows || batch.validRows || 34 }}

@@ -196,40 +196,40 @@ import { UploadResponse } from '../../core/models/pos.model';
                 </select>
               </div>
 
-              <!-- Department Input with Quick Presets -->
+              <!-- Vendor Number Input with Quick Presets -->
               <div>
                 <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
-                  Department / Dept Tag
+                  Vendor Number
                 </label>
                 <input 
                   type="text" 
                   class="input-control" 
-                  placeholder="e.g., Dept 117 - SAUNY SHEDECK, 120" 
-                  [(ngModel)]="departmentTag" />
+                  placeholder="e.g., 15371, 15529" 
+                  [(ngModel)]="vendorNumber" />
                 
-                <!-- Quick Department Preset Badges -->
+                <!-- Quick Vendor Preset Badges -->
                 <div class="flex items-center gap-1.5 flex-wrap" style="margin-top: 0.4rem;">
                   <span style="font-size: 0.6875rem; color: #64748b; font-weight: 600;">Presets:</span>
                   <button 
                     type="button" 
                     class="dept-preset-pill" 
-                    [class.active]="departmentTag === 'Dept 117 - SAUNY SHEDECK'"
-                    (click)="departmentTag = 'Dept 117 - SAUNY SHEDECK'">
-                    Dept 117
+                    [class.active]="vendorNumber === '15371'"
+                    (click)="vendorNumber = '15371'">
+                    15371
                   </button>
                   <button 
                     type="button" 
                     class="dept-preset-pill" 
-                    [class.active]="departmentTag === 'Dept 120 - ART SUPPLIES'"
-                    (click)="departmentTag = 'Dept 120 - ART SUPPLIES'">
-                    Dept 120
+                    [class.active]="vendorNumber === '15529'"
+                    (click)="vendorNumber = '15529'">
+                    15529
                   </button>
                   <button 
                     type="button" 
                     class="dept-preset-pill" 
-                    [class.active]="departmentTag === 'Dept 123 - JEWELRY'"
-                    (click)="departmentTag = 'Dept 123 - JEWELRY'">
-                    Dept 123
+                    [class.active]="vendorNumber === '15400'"
+                    (click)="vendorNumber = '15400'">
+                    15400
                   </button>
                 </div>
               </div>
@@ -255,7 +255,7 @@ import { UploadResponse } from '../../core/models/pos.model';
             </div>
           </div>
 
-          <!-- Success / Result Card (matching Image 2) -->
+          <!-- Success / Result Card (matching Image 2 without batch number) -->
           @if (uploadResult()) {
             <div class="success-result-box animate-fade-in">
               <div class="flex items-center gap-2" style="margin-bottom: 0.85rem;">
@@ -268,16 +268,12 @@ import { UploadResponse } from '../../core/models/pos.model';
 
               <div class="flex flex-col gap-2" style="font-size: 0.8125rem;">
                 <div class="flex items-center justify-between">
-                  <span style="color: #475569; font-weight: 600;">Batch:</span>
-                  <span style="font-family: var(--font-mono); color: #2563eb; font-weight: 700;">{{ uploadResult()?.batchId ? ('hl_batch_' + uploadResult()?.batchId?.slice(0,7)) : 'hl_batch_1790161' }}</span>
-                </div>
-                <div class="flex items-center justify-between">
                   <span style="color: #475569; font-weight: 600;">Retailer:</span>
                   <span style="color: #0f172a; font-weight: 800;">{{ uploadResult()?.retailerCode || selectedRetailer || 'HOBBY_LOBBY' }}</span>
                 </div>
                 <div class="flex items-center justify-between">
-                  <span style="color: #475569; font-weight: 600;">Department:</span>
-                  <span style="color: #0f172a; font-weight: 800;">{{ uploadResult()?.departmentTag || departmentTag || 'Auto-Extracted' }}</span>
+                  <span style="color: #475569; font-weight: 600;">Vendor Number:</span>
+                  <span style="color: #0f172a; font-weight: 800;">{{ uploadResult()?.vendorNumber || vendorNumber || 'Auto-Extracted' }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                   <span style="color: #475569; font-weight: 600;">Valid Rows:</span>
@@ -376,7 +372,7 @@ export class UploadComponent {
   readonly uploadResult = signal<UploadResponse | null>(null);
 
   selectedRetailer: string = 'AUTO';
-  departmentTag: string = '';
+  vendorNumber: string = '';
 
   setRetailer(code: string) {
     this.selectedRetailer = code;
@@ -411,13 +407,12 @@ export class UploadComponent {
     this.selectedFile.set(file);
     this.uploadResult.set(null);
 
-    // If filename has department clue, pre-populate if empty
+    // If filename has vendor number clue, pre-populate if empty
     const fn = file.name.toLowerCase();
-    if (!this.departmentTag) {
-      if (fn.includes('117') || fn.includes('sauny')) {
-        this.departmentTag = 'Dept 117 - SAUNY SHEDECK';
-      } else if (fn.includes('120')) {
-        this.departmentTag = 'Dept 120 - ART SUPPLIES';
+    if (!this.vendorNumber) {
+      const vMatch = fn.match(/(15371|15529|15400|15420|[0-9]{5})/);
+      if (vMatch) {
+        this.vendorNumber = vMatch[1];
       }
     }
 
@@ -450,7 +445,7 @@ export class UploadComponent {
         fileContent: this.fileContent(),
         fileName: this.selectedFile()?.name || 'pos_file.csv',
         retailerCode: this.selectedRetailer !== 'AUTO' ? this.selectedRetailer : undefined,
-        departmentTag: this.departmentTag.trim() || undefined,
+        vendorNumber: this.vendorNumber.trim() || undefined,
       })
       .subscribe({
         next: (res) => {

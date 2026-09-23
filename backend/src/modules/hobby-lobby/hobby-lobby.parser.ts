@@ -111,6 +111,7 @@ export interface HobbyLobbyParsedRow {
 export interface HobbyLobbyParseResult {
   success: boolean;
   retailer: 'HOBBY_LOBBY';
+  detectedVendors: string[];
   detectedDepartments: string[];
   totalRows: number;
   validRows: number;
@@ -121,7 +122,13 @@ export interface HobbyLobbyParseResult {
 
 export function parseHobbyLobbyCSV(
   csvContent: string,
-  options?: { defaultYear?: number; defaultMonth?: number; fileName?: string; departmentOverride?: string }
+  options?: {
+    defaultYear?: number;
+    defaultMonth?: number;
+    fileName?: string;
+    departmentOverride?: string;
+    vendorOverride?: string;
+  }
 ): HobbyLobbyParseResult {
   const meta = extractHobbyLobbyMetadataFromFileName(options?.fileName);
   const effectiveYear = meta.year || options?.defaultYear || new Date().getFullYear();
@@ -130,6 +137,7 @@ export function parseHobbyLobbyCSV(
   const result: HobbyLobbyParseResult = {
     success: true,
     retailer: 'HOBBY_LOBBY',
+    detectedVendors: [],
     detectedDepartments: [],
     totalRows: 0,
     validRows: 0,
@@ -154,6 +162,7 @@ export function parseHobbyLobbyCSV(
 
   result.totalRows = parsed.data.length;
   const departmentsSet = new Set<string>();
+  const vendorsSet = new Set<string>();
 
   const findValue = (row: Record<string, string>, rawKeys: string[], aliases: string[]): string => {
     for (const alias of aliases) {
@@ -176,7 +185,8 @@ export function parseHobbyLobbyCSV(
     const rowNum = idx + 2;
 
     const company = findValue(row, headerKeys, ['Company', 'Comp']) || 'Hobby Lobby';
-    const vendorNumber = findValue(row, headerKeys, ['Vendor Number', 'Vendor Numb', 'Vendor #', 'Vendor']) || meta.vendorNumber || 'UNKNOWN_VENDOR';
+    const rawVendor = findValue(row, headerKeys, ['Vendor Number', 'Vendor Numb', 'Vendor #', 'Vendor']) || meta.vendorNumber || '15371';
+    const vendorNumber = options?.vendorOverride || rawVendor;
     const vendorName = findValue(row, headerKeys, ['Vendor Name', 'Vendor Desc', 'Vendor Name/Desc']) || 'HORIZON';
     const buyerNumber = findValue(row, headerKeys, ['Buyer Number', 'Buyer Numb', 'Buyer #', 'Dept Number', 'Dept #']) || '';
     const buyerName = findValue(row, headerKeys, ['Buyer Name', 'Buyer', 'Dept Name', 'Department']) || 'General / Craft';
@@ -195,6 +205,8 @@ export function parseHobbyLobbyCSV(
       });
       return;
     }
+
+    vendorsSet.add(vendorNumber);
 
     const deptTag = options?.departmentOverride || (buyerNumber
       ? (buyerName ? `Dept ${buyerNumber} - ${buyerName}` : `Dept ${buyerNumber}`)
@@ -295,6 +307,7 @@ export function parseHobbyLobbyCSV(
     result.validRows++;
   });
 
+  result.detectedVendors = Array.from(vendorsSet);
   result.detectedDepartments = Array.from(departmentsSet);
   result.success = result.validRows > 0;
   return result;

@@ -156,6 +156,7 @@ export class PosApiService {
     fileContent: string;
     fileName: string;
     retailerCode?: string;
+    vendorNumber?: string;
     departmentTag?: string;
     familyOverride?: string;
   }): Observable<UploadResponse> {

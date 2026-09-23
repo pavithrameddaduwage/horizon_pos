@@ -34,16 +34,18 @@ export class HobbyLobbyService {
     fileSizeBytes: number,
     uploadedBy: string = 'portal_user',
     departmentOverride?: string,
+    vendorOverride?: string,
   ): Promise<{
     batchId: string;
     retailerCode: RetailerCode;
+    vendorNumber?: string;
     departmentTag?: string;
     success: boolean;
     totalRows: number;
     validRows: number;
     errorRows: number;
   }> {
-    const parseResult: HobbyLobbyParseResult = parseHobbyLobbyCSV(csvContent, { fileName, departmentOverride });
+    const parseResult: HobbyLobbyParseResult = parseHobbyLobbyCSV(csvContent, { fileName, departmentOverride, vendorOverride });
 
     if (!parseResult.success || parseResult.data.length === 0) {
       throw new Error(`Failed to parse Hobby Lobby CSV: ${parseResult.errors.map(e => e.error).join('; ') || 'No valid rows found'}`);
@@ -55,6 +57,7 @@ export class HobbyLobbyService {
 
     const uploadedAt = new Date();
     const finalDepartmentTag = departmentOverride || parseResult.detectedDepartments.join(', ') || 'General';
+    const finalVendorNumber = vendorOverride || parseResult.detectedVendors[0] || '15371';
 
     try {
       // 1. Create Ingestion Batch
@@ -63,6 +66,7 @@ export class HobbyLobbyService {
         fileName,
         fileSizeBytes,
         departmentTag: finalDepartmentTag,
+        vendorNumberTag: finalVendorNumber,
         totalRows: parseResult.totalRows,
         validRows: parseResult.validRows,
         errorRows: parseResult.errorRows,
@@ -146,6 +150,7 @@ export class HobbyLobbyService {
       return {
         batchId: savedBatch.id,
         retailerCode: RetailerCode.HOBBY_LOBBY,
+        vendorNumber: finalVendorNumber,
         departmentTag: finalDepartmentTag,
         success: true,
         totalRows: parseResult.totalRows,
