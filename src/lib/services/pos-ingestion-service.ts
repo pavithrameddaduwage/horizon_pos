@@ -27,32 +27,32 @@ class LegacyPOSDataStoreBridge {
     return posMicroserviceGateway.routeUpload(params);
   }
 
-  public getBatches(retailer?: RetailerCode): IngestionBatchRecord[] {
-    return posMicroserviceGateway.getAllBatches(retailer);
+  public async getBatches(retailer?: RetailerCode): Promise<IngestionBatchRecord[]> {
+    return await posMicroserviceGateway.getAllBatches(retailer);
   }
 
-  public getHobbyLobbyData(filters?: any) {
-    return hobbyLobbyService.getData(filters);
+  public async getHobbyLobbyData(filters?: any) {
+    return await hobbyLobbyService.getData(filters);
   }
 
-  public getFiveBelowData(filters?: any) {
-    return fiveBelowService.getData(filters);
+  public async getFiveBelowData(filters?: any) {
+    return await fiveBelowService.getData(filters);
   }
 
-  public getKohlsData(filters?: any) {
-    return kohlsService.getData(filters);
+  public async getKohlsData(filters?: any) {
+    return await kohlsService.getData(filters);
   }
 
-  public getMsiData(filters?: any) {
-    return msiService.getData(filters);
+  public async getMsiData(filters?: any) {
+    return await msiService.getData(filters);
   }
 
-  public getMisData(filters?: any) {
-    return msiService.getData(filters);
+  public async getMisData(filters?: any) {
+    return await msiService.getData(filters);
   }
 
-  public getKPIs() {
-    return posMicroserviceGateway.getAggregatedKPIs();
+  public async getKPIs() {
+    return await posMicroserviceGateway.getAggregatedKPIs();
   }
 }
 

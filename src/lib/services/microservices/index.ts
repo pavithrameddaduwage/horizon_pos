@@ -6,14 +6,8 @@ import { hobbyLobbyService } from './hobby-lobby-service';
 import { fiveBelowService } from './five-below-service';
 import { kohlsService } from './kohls-service';
 import { msiService } from './msi-service';
-import {
-  SAMPLE_HOBBY_LOBBY_CSV,
-  SAMPLE_FIVE_BELOW_TOYS_CSV,
-  SAMPLE_FIVE_BELOW_PARTY_CSV,
-  SAMPLE_FIVE_BELOW_BOOKS_CSV,
-  SAMPLE_KOHLS_CSV,
-  SAMPLE_MIS_CSV,
-} from '@/lib/mock-data/sample-datasets';
+import { prisma } from '@/lib/prisma';
+import { verifyAndInitDatabase } from '@/lib/db-init';
 
 export { hobbyLobbyService } from './hobby-lobby-service';
 export { fiveBelowService } from './five-below-service';
@@ -21,18 +15,6 @@ export { kohlsService } from './kohls-service';
 export { msiService } from './msi-service';
 
 class POSMicroserviceGateway {
-  private isInitialized = false;
-
-  constructor() {
-    this.initializeDefaultData();
-  }
-
-  public initializeDefaultData() {
-    // Clean initial state - all data populated dynamically through user uploads
-    if (this.isInitialized) return;
-    this.isInitialized = true;
-  }
-
   public autoDetectRetailer(fileContent: string, fileName?: string): { retailer: RetailerCode; family?: FiveBelowFamily } {
     const fn = (fileName || '').toLowerCase();
     const firstLine = fileContent.split('\n')[0].toLowerCase();
@@ -61,6 +43,8 @@ class POSMicroserviceGateway {
     departmentOverride?: string;
     uploadedBy?: string;
   }) {
+    await verifyAndInitDatabase();
+
     let effectiveRetailer = params.retailerOverride;
     let effectiveFamily = params.familyOverride;
 
@@ -70,12 +54,10 @@ class POSMicroserviceGateway {
       effectiveFamily = effectiveFamily || detected.family;
     }
 
-    // Support MIS as an alias for MSI
     if (effectiveRetailer === 'MIS') {
       effectiveRetailer = 'MSI';
     }
 
-    // Strict routing to the dedicated microservice component
     switch (effectiveRetailer) {
       case 'HOBBY_LOBBY':
         return await hobbyLobbyService.processUpload({
@@ -112,24 +94,65 @@ class POSMicroserviceGateway {
     }
   }
 
-  public getAllBatches(retailer?: RetailerCode): IngestionBatchRecord[] {
-    const all = [
-      ...hobbyLobbyService.getBatches(),
-      ...fiveBelowService.getBatches(),
-      ...kohlsService.getBatches(),
-      ...msiService.getBatches(),
-    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  public async getAllBatches(retailer?: RetailerCode): Promise<IngestionBatchRecord[]> {
+    await verifyAndInitDatabase();
+
+    try {
+      let rCode = retailer;
+      if (rCode === 'MIS') rCode = 'MSI';
+
+      const dbBatches = await prisma.ingestionBatch.findMany({
+        where: rCode ? { retailerCode: rCode as any } : undefined,
+        orderBy: { uploadedAt: 'desc' },
+      });
+
+      if (dbBatches.length > 0) {
+        return dbBatches.map((b) => ({
+          id: b.id,
+          retailerCode: b.retailerCode as any,
+          fileName: b.fileName,
+          fileSizeBytes: b.fileSizeBytes,
+          reportFamily: b.reportFamily,
+          departmentTag: b.departmentTag,
+          totalRows: b.totalRows,
+          validRows: b.validRows,
+          errorRows: b.errorRows,
+          status: b.status as any,
+          errorSummary: (b.errorSummary as any) || null,
+          uploadedBy: b.uploadedBy,
+          uploadedAt: b.uploadedAt.toISOString(),
+          createdAt: b.createdAt.toISOString(),
+          updatedAt: b.updatedAt.toISOString(),
+        }));
+      }
+    } catch {
+      // fallback
+    }
+
+    const hlBatches = await hobbyLobbyService.getBatches();
+    const fbBatches = await fiveBelowService.getBatches();
+    const khBatches = await kohlsService.getBatches();
+    const msiBatches = await msiService.getBatches();
+
+    const all = [...hlBatches, ...fbBatches, ...khBatches, ...msiBatches].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
 
     if (!retailer) return all;
-    if (retailer === 'MIS') retailer = 'MSI';
-    return all.filter((b) => b.retailerCode === retailer);
+    let r = retailer;
+    if (r === 'MIS') r = 'MSI';
+    return all.filter((b) => b.retailerCode === r);
   }
 
-  public getAggregatedKPIs() {
-    const hlMetrics = hobbyLobbyService.getMetrics();
-    const fbMetrics = fiveBelowService.getMetrics();
-    const khMetrics = kohlsService.getMetrics();
-    const msiMetrics = msiService.getMetrics();
+  public async getAggregatedKPIs() {
+    await verifyAndInitDatabase();
+
+    const [hlMetrics, fbMetrics, khMetrics, msiMetrics] = await Promise.all([
+      hobbyLobbyService.getMetrics(),
+      fiveBelowService.getMetrics(),
+      kohlsService.getMetrics(),
+      msiService.getMetrics(),
+    ]);
 
     const totalBatches = hlMetrics.batches + fbMetrics.batches + khMetrics.batches + msiMetrics.batches;
     const totalRowsIngested = hlMetrics.rows + fbMetrics.rows + khMetrics.rows + msiMetrics.rows;
@@ -142,7 +165,6 @@ class POSMicroserviceGateway {
         FIVE_BELOW: fbMetrics,
         KOHLS: khMetrics,
         MSI: msiMetrics,
-        // Alias MIS for backward compatibility
         MIS: msiMetrics,
       },
     };
