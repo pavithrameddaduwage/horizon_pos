@@ -105,7 +105,8 @@ import { UploadResponse } from '../../core/models/pos.model';
           <!-- Dropzone Card (Supports multiple files) -->
           <div 
             class="ui-card drop-card flex flex-col items-center justify-center gap-3"
-            style="padding: 2.5rem 1.5rem; text-align: center; cursor: pointer;"
+            [style.padding]="fileQueue().length > 0 ? '1.25rem 1.5rem' : '2.5rem 1.5rem'"
+            style="text-align: center; cursor: pointer; transition: all 0.2s ease;"
             [class.dragover]="isDragging()"
             (dragover)="onDragOver($event)"
             (dragleave)="onDragLeave($event)"
@@ -120,8 +121,8 @@ import { UploadResponse } from '../../core/models/pos.model';
               style="display: none;" 
               (change)="onFileSelected($event)" />
 
-            <div class="drop-circle">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <div class="drop-circle" [style.width.px]="fileQueue().length > 0 ? 38 : 48" [style.height.px]="fileQueue().length > 0 ? 38 : 48">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="17 8 12 3 7 8"></polyline>
                 <line x1="12" x2="12" y1="3" y2="15"></line>
@@ -129,8 +130,8 @@ import { UploadResponse } from '../../core/models/pos.model';
             </div>
 
             <div>
-              <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a;">Click to select or drag and drop single or multiple POS CSV files</h4>
-              <p style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">Supports batch uploads for historical & multi-month files</p>
+              <h4 style="font-size: 0.9rem; font-weight: 700; color: #0f172a;">Click to select or drag and drop single or multiple POS CSV files</h4>
+              <p style="font-size: 0.75rem; color: #64748b; margin-top: 3px;">Supports batch uploads for historical & multi-month files (~20KB each)</p>
             </div>
           </div>
 
@@ -158,8 +159,8 @@ import { UploadResponse } from '../../core/models/pos.model';
                 }
               </div>
 
-              <!-- Queue List -->
-              <div class="flex flex-col gap-2.5 max-h-[320px] overflow-y-auto pr-1">
+              <!-- Queue List with inside scroll -->
+              <div class="queue-scroll-container">
                 @for (item of fileQueue(); track item.id; let idx = $index) {
                   <div class="queue-item-card flex items-center justify-between p-3">
                     <div class="flex items-center gap-3 min-w-0">
@@ -403,6 +404,30 @@ import { UploadResponse } from '../../core/models/pos.model';
       display: flex;
       align-items: center;
       justify-content: center;
+    }
+    .queue-scroll-container {
+      max-height: 280px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+      padding-right: 0.35rem;
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e1 transparent;
+    }
+    .queue-scroll-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    .queue-scroll-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .queue-scroll-container::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .queue-scroll-container::-webkit-scrollbar-thumb:hover {
+      background-color: #94a3b8;
     }
     .queue-item-card {
       background: #f8fafc;
