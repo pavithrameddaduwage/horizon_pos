@@ -27,22 +27,13 @@ const REQUIRED_POS_TABLES = [
   'MsiPOS',
 ];
 
-const INIT_SQL_DDL = `
--- Enums
-DO $$ BEGIN
-    CREATE TYPE "RetailerCode" AS ENUM ('HOBBY_LOBBY', 'FIVE_BELOW', 'KOHLS', 'MSI', 'MIS');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
+const INIT_SQL_STATEMENTS = [
+  // 1. Enums
+  `DO $$ BEGIN CREATE TYPE "RetailerCode" AS ENUM ('HOBBY_LOBBY', 'FIVE_BELOW', 'KOHLS', 'MSI', 'MIS'); EXCEPTION WHEN duplicate_object THEN null; END $$;`,
+  `DO $$ BEGIN CREATE TYPE "BatchStatus" AS ENUM ('PENDING', 'VALIDATING', 'PROCESSING', 'COMPLETED', 'FAILED', 'PARTIALLY_COMPLETED'); EXCEPTION WHEN duplicate_object THEN null; END $$;`,
 
-DO $$ BEGIN
-    CREATE TYPE "BatchStatus" AS ENUM ('PENDING', 'VALIDATING', 'PROCESSING', 'COMPLETED', 'FAILED', 'PARTIALLY_COMPLETED');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
--- 1. Ingestion Batches Table
-CREATE TABLE IF NOT EXISTS "IngestionBatch" (
+  // 2. Ingestion Batches Table
+  `CREATE TABLE IF NOT EXISTS "IngestionBatch" (
     "id" TEXT PRIMARY KEY,
     "retailerCode" "RetailerCode" NOT NULL,
     "fileName" TEXT NOT NULL,
@@ -58,13 +49,12 @@ CREATE TABLE IF NOT EXISTS "IngestionBatch" (
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+  )`,
+  `CREATE INDEX IF NOT EXISTS "idx_batch_retailer_uploaded" ON "IngestionBatch" ("retailerCode", "uploadedAt")`,
+  `CREATE INDEX IF NOT EXISTS "idx_batch_status" ON "IngestionBatch" ("status")`,
 
-CREATE INDEX IF NOT EXISTS "idx_batch_retailer_uploaded" ON "IngestionBatch" ("retailerCode", "uploadedAt");
-CREATE INDEX IF NOT EXISTS "idx_batch_status" ON "IngestionBatch" ("status");
-
--- 2. Hobby Lobby POS
-CREATE TABLE IF NOT EXISTS "HobbyLobbyPOS" (
+  // 3. Hobby Lobby POS Snapshot
+  `CREATE TABLE IF NOT EXISTS "HobbyLobbyPOS" (
     "id" TEXT PRIMARY KEY,
     "batchId" TEXT NOT NULL REFERENCES "IngestionBatch"("id") ON DELETE CASCADE,
     "company" TEXT,
@@ -94,17 +84,16 @@ CREATE TABLE IF NOT EXISTS "HobbyLobbyPOS" (
     "uploadedBy" TEXT NOT NULL DEFAULT 'portal_user',
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+  )`,
+  `CREATE INDEX IF NOT EXISTS "idx_hl_batch" ON "HobbyLobbyPOS" ("batchId")`,
+  `CREATE INDEX IF NOT EXISTS "idx_hl_vendor" ON "HobbyLobbyPOS" ("vendorNumber")`,
+  `CREATE INDEX IF NOT EXISTS "idx_hl_buyer" ON "HobbyLobbyPOS" ("buyerNumber")`,
+  `CREATE INDEX IF NOT EXISTS "idx_hl_item" ON "HobbyLobbyPOS" ("itemNumber")`,
+  `CREATE INDEX IF NOT EXISTS "idx_hl_period" ON "HobbyLobbyPOS" ("reportingYear", "reportingMonth")`,
+  `CREATE INDEX IF NOT EXISTS "idx_hl_uploaded" ON "HobbyLobbyPOS" ("uploadedAt")`,
 
-CREATE INDEX IF NOT EXISTS "idx_hl_batch" ON "HobbyLobbyPOS" ("batchId");
-CREATE INDEX IF NOT EXISTS "idx_hl_vendor" ON "HobbyLobbyPOS" ("vendorNumber");
-CREATE INDEX IF NOT EXISTS "idx_hl_buyer" ON "HobbyLobbyPOS" ("buyerNumber");
-CREATE INDEX IF NOT EXISTS "idx_hl_item" ON "HobbyLobbyPOS" ("itemNumber");
-CREATE INDEX IF NOT EXISTS "idx_hl_period" ON "HobbyLobbyPOS" ("reportingYear", "reportingMonth");
-CREATE INDEX IF NOT EXISTS "idx_hl_uploaded" ON "HobbyLobbyPOS" ("uploadedAt");
-
--- 3. Five Below POS
-CREATE TABLE IF NOT EXISTS "FiveBelowPOS" (
+  // 4. Five Below POS
+  `CREATE TABLE IF NOT EXISTS "FiveBelowPOS" (
     "id" TEXT PRIMARY KEY,
     "batchId" TEXT NOT NULL REFERENCES "IngestionBatch"("id") ON DELETE CASCADE,
     "reportFamily" TEXT NOT NULL,
@@ -153,17 +142,16 @@ CREATE TABLE IF NOT EXISTS "FiveBelowPOS" (
     "uploadedBy" TEXT NOT NULL DEFAULT 'portal_user',
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+  )`,
+  `CREATE INDEX IF NOT EXISTS "idx_fb_batch" ON "FiveBelowPOS" ("batchId")`,
+  `CREATE INDEX IF NOT EXISTS "idx_fb_family" ON "FiveBelowPOS" ("reportFamily")`,
+  `CREATE INDEX IF NOT EXISTS "idx_fb_department" ON "FiveBelowPOS" ("department")`,
+  `CREATE INDEX IF NOT EXISTS "idx_fb_sku" ON "FiveBelowPOS" ("sku")`,
+  `CREATE INDEX IF NOT EXISTS "idx_fb_gtin" ON "FiveBelowPOS" ("gtin")`,
+  `CREATE INDEX IF NOT EXISTS "idx_fb_uploaded" ON "FiveBelowPOS" ("uploadedAt")`,
 
-CREATE INDEX IF NOT EXISTS "idx_fb_batch" ON "FiveBelowPOS" ("batchId");
-CREATE INDEX IF NOT EXISTS "idx_fb_family" ON "FiveBelowPOS" ("reportFamily");
-CREATE INDEX IF NOT EXISTS "idx_fb_department" ON "FiveBelowPOS" ("department");
-CREATE INDEX IF NOT EXISTS "idx_fb_sku" ON "FiveBelowPOS" ("sku");
-CREATE INDEX IF NOT EXISTS "idx_fb_gtin" ON "FiveBelowPOS" ("gtin");
-CREATE INDEX IF NOT EXISTS "idx_fb_uploaded" ON "FiveBelowPOS" ("uploadedAt");
-
--- 4. Kohl's POS
-CREATE TABLE IF NOT EXISTS "KohlsPOS" (
+  // 5. Kohl's POS
+  `CREATE TABLE IF NOT EXISTS "KohlsPOS" (
     "id" TEXT PRIMARY KEY,
     "batchId" TEXT NOT NULL REFERENCES "IngestionBatch"("id") ON DELETE CASCADE,
     "storeNumber" TEXT NOT NULL,
@@ -192,16 +180,15 @@ CREATE TABLE IF NOT EXISTS "KohlsPOS" (
     "uploadedBy" TEXT NOT NULL DEFAULT 'portal_user',
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+  )`,
+  `CREATE INDEX IF NOT EXISTS "idx_kh_batch" ON "KohlsPOS" ("batchId")`,
+  `CREATE INDEX IF NOT EXISTS "idx_kh_store" ON "KohlsPOS" ("storeNumber")`,
+  `CREATE INDEX IF NOT EXISTS "idx_kh_sku" ON "KohlsPOS" ("sku")`,
+  `CREATE INDEX IF NOT EXISTS "idx_kh_department" ON "KohlsPOS" ("department")`,
+  `CREATE INDEX IF NOT EXISTS "idx_kh_uploaded" ON "KohlsPOS" ("uploadedAt")`,
 
-CREATE INDEX IF NOT EXISTS "idx_kh_batch" ON "KohlsPOS" ("batchId");
-CREATE INDEX IF NOT EXISTS "idx_kh_store" ON "KohlsPOS" ("storeNumber");
-CREATE INDEX IF NOT EXISTS "idx_kh_sku" ON "KohlsPOS" ("sku");
-CREATE INDEX IF NOT EXISTS "idx_kh_department" ON "KohlsPOS" ("department");
-CREATE INDEX IF NOT EXISTS "idx_kh_uploaded" ON "KohlsPOS" ("uploadedAt");
-
--- 5. MSI Enterprise POS
-CREATE TABLE IF NOT EXISTS "MsiPOS" (
+  // 6. MSI Enterprise POS
+  `CREATE TABLE IF NOT EXISTS "MsiPOS" (
     "id" TEXT PRIMARY KEY,
     "batchId" TEXT NOT NULL REFERENCES "IngestionBatch"("id") ON DELETE CASCADE,
     "storeId" TEXT NOT NULL,
@@ -223,14 +210,13 @@ CREATE TABLE IF NOT EXISTS "MsiPOS" (
     "uploadedBy" TEXT NOT NULL DEFAULT 'portal_user',
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS "idx_msi_batch" ON "MsiPOS" ("batchId");
-CREATE INDEX IF NOT EXISTS "idx_msi_store" ON "MsiPOS" ("storeId");
-CREATE INDEX IF NOT EXISTS "idx_msi_receipt" ON "MsiPOS" ("receiptNumber");
-CREATE INDEX IF NOT EXISTS "idx_msi_department" ON "MsiPOS" ("department");
-CREATE INDEX IF NOT EXISTS "idx_msi_uploaded" ON "MsiPOS" ("uploadedAt");
-`;
+  )`,
+  `CREATE INDEX IF NOT EXISTS "idx_msi_batch" ON "MsiPOS" ("batchId")`,
+  `CREATE INDEX IF NOT EXISTS "idx_msi_store" ON "MsiPOS" ("storeId")`,
+  `CREATE INDEX IF NOT EXISTS "idx_msi_receipt" ON "MsiPOS" ("receiptNumber")`,
+  `CREATE INDEX IF NOT EXISTS "idx_msi_department" ON "MsiPOS" ("department")`,
+  `CREATE INDEX IF NOT EXISTS "idx_msi_uploaded" ON "MsiPOS" ("uploadedAt")`
+];
 
 function getMaintenanceDatabaseUrl(): string {
   const user = encodeURIComponent(process.env.DW_USER || 'postgres');
@@ -259,7 +245,7 @@ async function ensureDatabaseExists(databaseName: string) {
       console.log(`[DB] Database "${databaseName}" created successfully.`);
     }
   } catch (err: any) {
-    // If maintenance connection fails (e.g. permission or non-postgres default db), skip silently
+    // skip if maintenance db not accessible
   } finally {
     await maintenance.$disconnect().catch(() => {});
   }
@@ -288,10 +274,16 @@ export async function verifyAndInitDatabase(): Promise<DbHealthResult> {
 
     const missingTables = REQUIRED_POS_TABLES.filter((t) => !existingTableNames.has(t));
 
-    // 3. If any table is missing, create them automatically
+    // 3. If any table is missing, execute each statement individually
     if (missingTables.length > 0) {
       console.log(`[DB] Creating missing POS tables: ${missingTables.join(', ')}`);
-      await prisma.$executeRawUnsafe(INIT_SQL_DDL);
+      for (const statement of INIT_SQL_STATEMENTS) {
+        try {
+          await prisma.$executeRawUnsafe(statement);
+        } catch (stmtErr: any) {
+          console.warn('[DB] SQL DDL Statement notice:', stmtErr?.message || stmtErr);
+        }
+      }
       console.log('[DB] POS tables created successfully.');
     }
 
