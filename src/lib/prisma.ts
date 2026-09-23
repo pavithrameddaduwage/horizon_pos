@@ -10,7 +10,11 @@ export function getDatabaseUrl(): string {
     const auth = password ? `${user}:${password}` : user;
     return `postgresql://${auth}@${host}:${port}/${dbName}?schema=public`;
   }
-  return process.env.DATABASE_URL || 'postgresql://postgres:0006@localhost:5432/report_portal_db?schema=public';
+  return 'postgresql://postgres:0006@localhost:5432/report_portal_db?schema=public';
+}
+
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = getDatabaseUrl();
 }
 
 const globalForPrisma = global as unknown as { prisma?: PrismaClient };
