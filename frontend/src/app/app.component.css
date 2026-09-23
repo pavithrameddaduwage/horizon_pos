@@ -1,0 +1,29 @@
+.toast-wrapper {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 1000;
+}
+
+.toast-box {
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  background: #ffffff;
+}
+
+.toast-success {
+  border: 1px solid #a7f3d0;
+  background: #f0fdf4;
+}
+
+.toast-error {
+  border: 1px solid #fecdd3;
+  background: #fff1f2;
+}
+
+.toast-info {
+  border: 1px solid #bae6fd;
+  background: #f0f9ff;
+}
+

@@ -1,9 +1,12 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# Horizon POS Portal Architecture
 
-# This is NOT the Next.js you know
+This workspace is structured as a decoupled full-stack application:
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+- **`backend/`**: NestJS microservices backend with TypeORM and PostgreSQL.
+- **`frontend/`**: Angular 19 standalone application with Signals, RxJS, and dark glassmorphic UI.
 
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+## Quick Commands
 
-<!-- END:nextjs-agent-rules -->
+- `npm run start:backend` - Starts NestJS dev server on `http://localhost:4000`
+- `npm run start:frontend` - Starts Angular dev server on `http://localhost:4200`
+- `npm run build:all` - Builds both backend and frontend applications
