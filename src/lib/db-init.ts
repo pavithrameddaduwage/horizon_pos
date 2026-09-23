@@ -281,7 +281,11 @@ export async function verifyAndInitDatabase(): Promise<DbHealthResult> {
       }
     }
 
-    console.log(`[DB] PostgreSQL connected: ${host}:${port}/${database} (tables: ${tableStatuses.filter(t => t.exists).map(t => t.tableName).join(', ')})`);
+    const globalDb = global as unknown as { __posDbLogged?: boolean };
+    if (!globalDb.__posDbLogged) {
+      globalDb.__posDbLogged = true;
+      console.log(`[DB] PostgreSQL connected: ${host}:${port}/${database} (tables: ${tableStatuses.filter(t => t.exists).map(t => t.tableName).join(', ')})`);
+    }
 
     return {
       connected: true,
@@ -294,7 +298,11 @@ export async function verifyAndInitDatabase(): Promise<DbHealthResult> {
       timestamp: new Date().toISOString(),
     };
   } catch (error: any) {
-    console.error(`[DB] Connection failed to ${host}:${port}/${database} - ${error?.message || error}`);
+    const globalDb = global as unknown as { __posDbErrorLogged?: boolean };
+    if (!globalDb.__posDbErrorLogged) {
+      globalDb.__posDbErrorLogged = true;
+      console.error(`[DB] Connection failed to ${host}:${port}/${database} - ${error?.message || error}`);
+    }
 
     return {
       connected: false,
@@ -308,12 +316,4 @@ export async function verifyAndInitDatabase(): Promise<DbHealthResult> {
       timestamp: new Date().toISOString(),
     };
   }
-}
-
-// Auto-run on module load (once)
-if (!hasBootstrapped && process.env.NODE_ENV !== 'test') {
-  hasBootstrapped = true;
-  verifyAndInitDatabase().catch((err) => {
-    console.error('[DB] Auto-bootstrap error:', err?.message || err);
-  });
 }
