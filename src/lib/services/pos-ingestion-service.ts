@@ -27,11 +27,11 @@ import {
 // In-Memory Data Store (Persists during server lifecycle, fast, seamless fallback)
 class IngestionDataStore {
   public batches: IngestionBatchRecord[] = [];
-  public hobbyLobbyRows: Array<HobbyLobbyRow & { id: string; batchId: string; createdAt: string }> = [];
-  public fiveBelowRows: Array<FiveBelowRow & { id: string; batchId: string; createdAt: string }> = [];
-  public kohlsRows: Array<KohlsRow & { id: string; batchId: string; createdAt: string }> = [];
-  public misRows: Array<MisRow & { id: string; batchId: string; createdAt: string }> = [];
-  public departments: Array<{ id: string; retailerCode: RetailerCode; code: string; name: string; buyerName?: string }> = [];
+  public hobbyLobbyRows: Array<HobbyLobbyRow & { id: string; batchId: string; uploadedBy: string; uploadedAt: string; createdAt: string }> = [];
+  public fiveBelowRows: Array<FiveBelowRow & { id: string; batchId: string; uploadedBy: string; uploadedAt: string; createdAt: string }> = [];
+  public kohlsRows: Array<KohlsRow & { id: string; batchId: string; uploadedBy: string; uploadedAt: string; createdAt: string }> = [];
+  public misRows: Array<MisRow & { id: string; batchId: string; uploadedBy: string; uploadedAt: string; createdAt: string }> = [];
+  public departments: Array<{ id: string; retailerCode: RetailerCode; code: string; name: string; buyerName?: string; uploadedBy: string; uploadedAt: string }> = [];
   private isInitialized = false;
 
   constructor() {
@@ -46,7 +46,7 @@ class IngestionDataStore {
       fileContent: SAMPLE_HOBBY_LOBBY_CSV,
       fileName: 'Hobby_Lobby_Monthly_POS_2026_07.csv',
       retailerOverride: 'HOBBY_LOBBY',
-      uploadedBy: 'system_demo',
+      uploadedBy: 'system_admin',
     });
 
     // Seed Sample Five Below Toys
@@ -55,7 +55,7 @@ class IngestionDataStore {
       fileName: 'Five_Below_Weekly_TOYS_2026_W29.csv',
       retailerOverride: 'FIVE_BELOW',
       familyOverride: 'TOY',
-      uploadedBy: 'system_demo',
+      uploadedBy: 'system_admin',
     });
 
     // Seed Sample Five Below Party
@@ -64,7 +64,7 @@ class IngestionDataStore {
       fileName: 'Five_Below_Weekly_PARTY_GAG_2026_W29.csv',
       retailerOverride: 'FIVE_BELOW',
       familyOverride: 'PARTY_GAG',
-      uploadedBy: 'system_demo',
+      uploadedBy: 'system_admin',
     });
 
     // Seed Sample Five Below Books
@@ -73,7 +73,7 @@ class IngestionDataStore {
       fileName: 'Five_Below_Weekly_BOOKS_2026_W29.csv',
       retailerOverride: 'FIVE_BELOW',
       familyOverride: 'BOOKS',
-      uploadedBy: 'system_demo',
+      uploadedBy: 'system_admin',
     });
 
     // Seed Sample Kohl's
@@ -81,7 +81,7 @@ class IngestionDataStore {
       fileContent: SAMPLE_KOHLS_CSV,
       fileName: 'Kohls_EDI852_Weekly_POS_20260725.csv',
       retailerOverride: 'KOHLS',
-      uploadedBy: 'system_demo',
+      uploadedBy: 'system_admin',
     });
 
     // Seed Sample MIS
@@ -89,7 +89,7 @@ class IngestionDataStore {
       fileContent: SAMPLE_MIS_CSV,
       fileName: 'MIS_Enterprise_Register_POS_20260725.csv',
       retailerOverride: 'MIS',
-      uploadedBy: 'system_demo',
+      uploadedBy: 'system_admin',
     });
 
     this.isInitialized = true;
@@ -113,7 +113,7 @@ class IngestionDataStore {
       return { retailer: 'FIVE_BELOW', family: detectFiveBelowFamily(headers, fileName) };
     }
 
-    return { retailer: 'HOBBY_LOBBY' }; // Default fallback
+    return { retailer: 'HOBBY_LOBBY' };
   }
 
   public processUpload(params: {
@@ -149,6 +149,8 @@ class IngestionDataStore {
               ...row,
               id: `hl_${batchId}_${idx}`,
               batchId,
+              uploadedBy,
+              uploadedAt: now,
               createdAt: now,
             });
           });
@@ -163,6 +165,8 @@ class IngestionDataStore {
               ...row,
               id: `fb_${batchId}_${idx}`,
               batchId,
+              uploadedBy,
+              uploadedAt: now,
               createdAt: now,
             });
           });
@@ -177,6 +181,8 @@ class IngestionDataStore {
               ...row,
               id: `kh_${batchId}_${idx}`,
               batchId,
+              uploadedBy,
+              uploadedAt: now,
               createdAt: now,
             });
           });
@@ -191,6 +197,8 @@ class IngestionDataStore {
               ...row,
               id: `mis_${batchId}_${idx}`,
               batchId,
+              uploadedBy,
+              uploadedAt: now,
               createdAt: now,
             });
           });
@@ -207,6 +215,8 @@ class IngestionDataStore {
           retailerCode: effectiveRetailer!,
           code: dept.toUpperCase().replace(/[^A-Z0-9]/g, '_').slice(0, 10),
           name: dept,
+          uploadedBy,
+          uploadedAt: now,
         });
       }
     });
@@ -224,6 +234,7 @@ class IngestionDataStore {
       status: parseResult.errorRows === 0 ? 'COMPLETED' : parseResult.validRows > 0 ? 'PARTIALLY_COMPLETED' : 'FAILED',
       errorSummary: parseResult.errors.length > 0 ? parseResult.errors : null,
       uploadedBy,
+      uploadedAt: now,
       createdAt: now,
       updatedAt: now,
     };
@@ -268,18 +279,13 @@ class IngestionDataStore {
     const totalBatches = this.batches.length;
     const totalRowsIngested = this.batches.reduce((acc, b) => acc + b.validRows, 0);
 
-    // Hobby Lobby Aggregates
     const hlTotal12MSales = this.hobbyLobbyRows.reduce((acc, r) => acc + (r.sales12M || 0), 0);
     const hlTotalOnHand = this.hobbyLobbyRows.reduce((acc, r) => acc + (r.onHand || 0), 0);
 
-    // Five Below Aggregates
     const fbTotalYTDSales = this.fiveBelowRows.reduce((acc, r) => acc + (r.salesDYTD || 0), 0);
     const fbTotalInvOH = this.fiveBelowRows.reduce((acc, r) => acc + (r.invOHU || 0), 0);
 
-    // Kohl's Aggregates
     const khTotalDollars = this.kohlsRows.reduce((acc, r) => acc + (r.posDollars || 0), 0);
-
-    // MIS Aggregates
     const misTotalDollars = this.misRows.reduce((acc, r) => acc + (r.totalAmount || 0), 0);
 
     return {

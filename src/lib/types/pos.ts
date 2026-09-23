@@ -19,6 +19,7 @@ export interface IngestionBatchRecord {
   status: BatchStatus;
   errorSummary?: Array<{ row: number; column?: string; error: string; sampleData?: string }> | null;
   uploadedBy: string;
+  uploadedAt: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -48,6 +49,8 @@ export interface HobbyLobbyRow {
   monthlySalesCY: Record<string, number>; // { jan, feb, ... dec }
   reportingYear?: number;
   reportingMonth?: number;
+  uploadedBy?: string;
+  uploadedAt?: string;
 }
 
 // Five Below Row Structure (Dynamic Family Columns)
@@ -95,6 +98,8 @@ export interface FiveBelowRow {
   storeWohLCW?: number;
   dcWohLCW?: number;
   currOOU?: number;
+  uploadedBy?: string;
+  uploadedAt?: string;
 }
 
 // Kohl's POS Row Structure
@@ -122,6 +127,8 @@ export interface KohlsRow {
   onOrderUnits: number;
   inTransitUnits: number;
   weekEndDate?: string;
+  uploadedBy?: string;
+  uploadedAt?: string;
 }
 
 // MIS Enterprise POS Row Structure
@@ -142,6 +149,8 @@ export interface MisRow {
   totalAmount: number;
   tenderType?: string;
   transactionTime: string;
+  uploadedBy?: string;
+  uploadedAt?: string;
 }
 
 export interface ParseResult<T> {

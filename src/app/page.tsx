@@ -382,7 +382,8 @@ export default function HorizonPOSPortal() {
                       <th>Family / Dept</th>
                       <th>Rows</th>
                       <th>Status</th>
-                      <th>Timestamp</th>
+                      <th>Uploaded By</th>
+                      <th>Uploaded Date/Time</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -404,7 +405,8 @@ export default function HorizonPOSPortal() {
                             {b.status}
                           </span>
                         </td>
-                        <td className="text-xs font-medium text-slate-700">{new Date(b.createdAt).toLocaleTimeString()}</td>
+                        <td className="text-xs font-bold text-slate-900">{b.uploadedBy}</td>
+                        <td className="text-xs font-medium text-slate-700">{new Date(b.uploadedAt || b.createdAt).toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -667,7 +669,8 @@ export default function HorizonPOSPortal() {
                       <th>Valid Rows</th>
                       <th>Error Rows</th>
                       <th>Status</th>
-                      <th>Timestamp</th>
+                      <th>Uploaded By</th>
+                      <th>Uploaded Date/Time</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -691,7 +694,8 @@ export default function HorizonPOSPortal() {
                             {b.status}
                           </span>
                         </td>
-                        <td className="text-xs font-bold text-slate-700">{new Date(b.createdAt).toLocaleString()}</td>
+                        <td className="text-xs font-bold text-slate-900">{b.uploadedBy}</td>
+                        <td className="text-xs font-medium text-slate-700">{new Date(b.uploadedAt || b.createdAt).toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -757,6 +761,8 @@ export default function HorizonPOSPortal() {
                       <th>2 YR Sales</th>
                       <th>LY Sales</th>
                       <th>12M Sales</th>
+                      <th>Uploaded By</th>
+                      <th>Uploaded Date/Time</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -783,6 +789,8 @@ export default function HorizonPOSPortal() {
                         <td className="text-xs text-slate-900 font-bold">${row.sales2Yr.toLocaleString(undefined, { minimumFractionDigits: 0 })}</td>
                         <td className="text-xs text-slate-900 font-bold">${row.salesLY.toLocaleString(undefined, { minimumFractionDigits: 0 })}</td>
                         <td className="text-xs font-black text-emerald-800">${row.sales12M.toLocaleString(undefined, { minimumFractionDigits: 0 })}</td>
+                        <td className="text-xs font-bold text-slate-900">{row.uploadedBy || 'portal_user'}</td>
+                        <td className="text-xs font-medium text-slate-700">{new Date(row.uploadedAt || new Date()).toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -837,6 +845,8 @@ export default function HorizonPOSPortal() {
                       <th>Store OH</th>
                       <th>DC OH</th>
                       <th>WOH</th>
+                      <th>Uploaded By</th>
+                      <th>Uploaded Date/Time</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -870,6 +880,8 @@ export default function HorizonPOSPortal() {
                           {row.dc3OHU ? `DC3:${row.dc3OHU} | DC4:${row.dc4OHU}` : `${row.dcOHU || 0}`}
                         </td>
                         <td className="text-xs font-black text-amber-800">{row.wohLCW || '-'} wks</td>
+                        <td className="text-xs font-bold text-slate-900">{row.uploadedBy || 'portal_user'}</td>
+                        <td className="text-xs font-medium text-slate-700">{new Date(row.uploadedAt || new Date()).toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>
