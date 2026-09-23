@@ -99,10 +99,10 @@ import { UploadResponse } from '../../core/models/pos.model';
       <!-- Main Upload Workspace Grid (Left 2/3, Right 1/3) -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <!-- Left Column: Dropzone & Code Preview -->
+        <!-- Left Column: Dropzone, Multi-File Queue & Code Preview -->
         <div class="flex flex-col gap-6" style="grid-column: span 2;">
           
-          <!-- Dropzone Card -->
+          <!-- Dropzone Card (Supports multiple files) -->
           <div 
             class="ui-card drop-card flex flex-col items-center justify-center gap-3"
             style="padding: 2.5rem 1.5rem; text-align: center; cursor: pointer;"
@@ -115,6 +115,7 @@ import { UploadResponse } from '../../core/models/pos.model';
             <input 
               #fileInput 
               type="file" 
+              multiple
               accept=".csv,.txt,.xlsx,.xls" 
               style="display: none;" 
               (change)="onFileSelected($event)" />
@@ -127,23 +128,107 @@ import { UploadResponse } from '../../core/models/pos.model';
               </svg>
             </div>
 
-            @if (selectedFile()) {
-              <div class="flex flex-col items-center gap-2">
-                <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a;">{{ selectedFile()?.name }}</h4>
-                <div class="file-pill">
-                  {{ selectedFile()?.name }} ({{ ((selectedFile()?.size || 0) / 1024 | number:'1.1-1') }} KB)
-                </div>
-              </div>
-            } @else {
-              <div>
-                <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a;">Click to select or drag and drop POS CSV file</h4>
-                <p style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">Supports Hobby Lobby, Five Below, Kohl's, and MSI POS files</p>
-              </div>
-            }
+            <div>
+              <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a;">Click to select or drag and drop single or multiple POS CSV files</h4>
+              <p style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">Supports batch uploads for historical & multi-month files</p>
+            </div>
           </div>
 
-          <!-- Preview Card -->
-          @if (fileContent()) {
+          <!-- Multi-File Queue Card (When files are added) -->
+          @if (fileQueue().length > 0) {
+            <div class="ui-card" style="padding: 1.25rem 1.5rem;">
+              <div class="flex items-center justify-between" style="margin-bottom: 1rem;">
+                <div class="flex items-center gap-2">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                  </svg>
+                  <span style="font-size: 0.875rem; font-weight: 800; color: #0f172a;">
+                    Upload Queue ({{ fileQueue().length }} {{ fileQueue().length === 1 ? 'file' : 'files' }})
+                  </span>
+                </div>
+
+                @if (!uploading()) {
+                  <button 
+                    type="button" 
+                    style="background: none; border: none; font-size: 0.75rem; font-weight: 700; color: #dc2626; cursor: pointer;"
+                    (click)="clearQueue()">
+                    Clear All
+                  </button>
+                }
+              </div>
+
+              <!-- Queue List -->
+              <div class="flex flex-col gap-2.5 max-h-[320px] overflow-y-auto pr-1">
+                @for (item of fileQueue(); track item.id; let idx = $index) {
+                  <div class="queue-item-card flex items-center justify-between p-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="queue-item-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                          <polyline points="13 2 13 9 20 9"></polyline>
+                        </svg>
+                      </div>
+
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="truncate" style="font-size: 0.8125rem; font-weight: 700; color: #0f172a; max-width: 260px;">
+                            {{ item.name }}
+                          </span>
+                          <span style="font-size: 0.6875rem; color: #64748b; font-weight: 600;">
+                            ({{ (item.size / 1024 | number:'1.1-1') }} KB)
+                          </span>
+                        </div>
+
+                        <!-- Detected tags snippet -->
+                        <div class="flex items-center gap-2" style="font-size: 0.6875rem; color: #475569; margin-top: 2px;">
+                          @if (item.vendorNumber) {
+                            <span>Vendor: <strong>{{ item.vendorNumber }}</strong></span>
+                            <span>•</span>
+                          }
+                          @if (item.periodText) {
+                            <span style="color: #2563eb; font-weight: 700;">{{ item.periodText }}</span>
+                          }
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Right status / action -->
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                      @if (item.status === 'READY') {
+                        <span class="status-pill status-ready">Ready</span>
+                        @if (!uploading()) {
+                          <button type="button" class="remove-btn" (click)="removeItem(idx)">✕</button>
+                        }
+                      } @else if (item.status === 'UPLOADING') {
+                        <span class="status-pill status-uploading">Uploading...</span>
+                      } @else if (item.status === 'SUCCESS') {
+                        <span class="status-pill status-success">✓ {{ item.result?.validRows || 0 }} rows</span>
+                      } @else if (item.status === 'ERROR') {
+                        <span class="status-pill status-error" [title]="item.errorMessage || 'Upload failed'">✕ Failed</span>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- Upload Progress bar if uploading multiple -->
+              @if (uploading() && fileQueue().length > 1) {
+                <div style="margin-top: 1rem;">
+                  <div class="flex items-center justify-between" style="font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
+                    <span>Uploading {{ uploadProgress().current }} of {{ uploadProgress().total }} files...</span>
+                    <span>{{ uploadProgress().percentage }}%</span>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-bar" [style.width.%]="uploadProgress().percentage"></div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Single File Preview Card (If 1 file in queue) -->
+          @if (fileQueue().length === 1 && fileQueue()[0].content) {
             <div class="ui-card" style="padding: 1.25rem 1.5rem;">
               <div class="flex items-center justify-between" style="margin-bottom: 0.75rem;">
                 <div class="flex items-center gap-2">
@@ -153,12 +238,13 @@ import { UploadResponse } from '../../core/models/pos.model';
                   </svg>
                   <span style="font-size: 0.8125rem; font-weight: 700; color: #0f172a;">Preview</span>
                 </div>
-                <span style="font-size: 0.75rem; font-weight: 700; color: #475569;">{{ lineCount() }} Rows</span>
+                <span style="font-size: 0.75rem; font-weight: 700; color: #475569;">
+                  {{ lineCount(fileQueue()[0].content) }} Rows
+                </span>
               </div>
 
-              <!-- Monospace Code Box matching Image 2 -->
               <div class="code-preview-box">
-                <pre>{{ fileSnippet() }}</pre>
+                <pre>{{ fileSnippet(fileQueue()[0].content) }}</pre>
               </div>
             </div>
           }
@@ -200,7 +286,7 @@ import { UploadResponse } from '../../core/models/pos.model';
                 <input 
                   type="text" 
                   class="input-control" 
-                  placeholder="Auto-extracted from file or type here" 
+                  placeholder="Auto-extracted per file or override" 
                   [(ngModel)]="vendorNumber" />
               </div>
 
@@ -230,14 +316,14 @@ import { UploadResponse } from '../../core/models/pos.model';
                 </div>
               </div>
 
-              <!-- Detected Period Badge if found -->
-              @if (detectedPeriodLabel()) {
+              <!-- Detected Period Badge if single file -->
+              @if (fileQueue().length === 1 && fileQueue()[0].periodText) {
                 <div class="detected-badge flex items-center gap-1.5">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#166534" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <polyline points="12 6 12 12 16 14"></polyline>
                   </svg>
-                  <span>{{ detectedPeriodLabel() }}</span>
+                  <span>Detected: {{ fileQueue()[0].periodText }}</span>
                 </div>
               }
 
@@ -246,49 +332,45 @@ import { UploadResponse } from '../../core/models/pos.model';
                 type="button" 
                 class="btn-primary w-full" 
                 style="margin-top: 0.5rem; padding: 0.75rem;"
-                [disabled]="!fileContent() || uploading()"
-                (click)="submitUpload()">
+                [disabled]="fileQueue().length === 0 || uploading()"
+                (click)="submitAllUploads()">
                 @if (uploading()) {
-                  <span>Processing...</span>
+                  <span>Uploading {{ uploadProgress().current }} / {{ uploadProgress().total }}...</span>
                 } @else {
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <polyline points="16 12 12 8 8 12"></polyline>
                     <line x1="12" y1="16" x2="12" y2="8"></line>
                   </svg>
-                  <span>Submit</span>
+                  <span>
+                    {{ fileQueue().length > 1 ? ('Upload All (' + fileQueue().length + ' Files)') : 'Submit' }}
+                  </span>
                 }
               </button>
             </div>
           </div>
 
-          <!-- Success / Result Card -->
-          @if (uploadResult()) {
+          <!-- Overall Summary Box for Multiple Uploads -->
+          @if (batchSummary()) {
             <div class="success-result-box animate-fade-in">
               <div class="flex items-center gap-2" style="margin-bottom: 0.85rem;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                   <polyline points="22 4 12 14.01 9 11.01"></polyline>
                 </svg>
-                <span style="font-size: 0.875rem; font-weight: 800; color: #065f46;">Uploaded Successfully</span>
+                <span style="font-size: 0.875rem; font-weight: 800; color: #065f46;">
+                  {{ batchSummary()?.successfulFiles }} of {{ batchSummary()?.totalFiles }} Files Ingested
+                </span>
               </div>
 
               <div class="flex flex-col gap-2" style="font-size: 0.8125rem;">
                 <div class="flex items-center justify-between">
+                  <span style="color: #475569; font-weight: 600;">Total Rows Ingested:</span>
+                  <span style="color: #059669; font-weight: 800;">{{ batchSummary()?.totalValidRows || 0 }}</span>
+                </div>
+                <div class="flex items-center justify-between">
                   <span style="color: #475569; font-weight: 600;">Retailer:</span>
-                  <span style="color: #0f172a; font-weight: 800;">{{ uploadResult()?.retailerCode || selectedRetailer || 'HOBBY_LOBBY' }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span style="color: #475569; font-weight: 600;">Vendor Number:</span>
-                  <span style="color: #0f172a; font-weight: 800;">{{ uploadResult()?.vendorNumber || vendorNumber || 'Auto-Extracted' }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span style="color: #475569; font-weight: 600;">Reporting Period:</span>
-                  <span style="color: #2563eb; font-weight: 800;">{{ formatPeriod(uploadResult()?.reportingMonth, uploadResult()?.reportingYear) }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span style="color: #475569; font-weight: 600;">Valid Rows:</span>
-                  <span style="color: #059669; font-weight: 800;">{{ uploadResult()?.validRows || 34 }}</span>
+                  <span style="color: #0f172a; font-weight: 800;">{{ selectedRetailer !== 'AUTO' ? selectedRetailer : 'Auto-Detected' }}</span>
                 </div>
               </div>
             </div>
@@ -322,14 +404,71 @@ import { UploadResponse } from '../../core/models/pos.model';
       align-items: center;
       justify-content: center;
     }
-    .file-pill {
+    .queue-item-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+    }
+    .queue-item-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #eff6ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .status-pill {
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.6875rem;
+      font-weight: 800;
+    }
+    .status-ready {
       background: #eff6ff;
       color: #2563eb;
       border: 1px solid #bfdbfe;
+    }
+    .status-uploading {
+      background: #fef3c7;
+      color: #d97706;
+      border: 1px solid #fde68a;
+    }
+    .status-success {
+      background: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+    .status-error {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+    .remove-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 0.8125rem;
+      cursor: pointer;
+      padding: 0.2rem 0.35rem;
+      border-radius: 4px;
+    }
+    .remove-btn:hover {
+      color: #ef4444;
+      background: #fee2e2;
+    }
+    .progress-track {
+      width: 100%;
+      height: 6px;
+      background: #e2e8f0;
       border-radius: 9999px;
-      padding: 0.25rem 0.85rem;
-      font-size: 0.75rem;
-      font-weight: 700;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: #2563eb;
+      transition: width 0.3s ease;
     }
     .detected-badge {
       background: #f0fdf4;
@@ -365,11 +504,24 @@ export class UploadComponent {
   readonly state = inject(StateService);
 
   readonly isDragging = signal(false);
-  readonly selectedFile = signal<File | null>(null);
-  readonly fileContent = signal<string>('');
+  readonly fileQueue = signal<Array<{
+    id: string;
+    file: File;
+    name: string;
+    size: number;
+    content: string;
+    vendorNumber?: string;
+    year?: number;
+    month?: number;
+    periodText?: string;
+    status: 'READY' | 'UPLOADING' | 'SUCCESS' | 'ERROR';
+    result?: UploadResponse;
+    errorMessage?: string;
+  }>>([]);
+
   readonly uploading = signal(false);
-  readonly uploadResult = signal<UploadResponse | null>(null);
-  readonly detectedPeriodLabel = signal<string>('');
+  readonly uploadProgress = signal({ current: 0, total: 0, percentage: 0 });
+  readonly batchSummary = signal<{ totalFiles: number; successfulFiles: number; totalValidRows: number } | null>(null);
 
   selectedRetailer: string = 'AUTO';
   vendorNumber: string = '';
@@ -410,154 +562,188 @@ export class UploadComponent {
     e.preventDefault();
     this.isDragging.set(false);
     if (e.dataTransfer && e.dataTransfer.files.length > 0) {
-      this.processFile(e.dataTransfer.files[0]);
+      this.handleFilesAdded(Array.from(e.dataTransfer.files));
     }
   }
 
   onFileSelected(e: Event) {
     const input = e.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      this.processFile(input.files[0]);
+      this.handleFilesAdded(Array.from(input.files));
+      input.value = ''; // Reset input to allow re-selecting same files
     }
   }
 
-  private processFile(file: File) {
-    this.selectedFile.set(file);
-    this.uploadResult.set(null);
-    this.detectedPeriodLabel.set('');
-
-    const fn = file.name.toLowerCase();
-
-    // 1. Detect Vendor Number from filename
-    if (!this.vendorNumber) {
-      const vMatch = fn.match(/(15371|15529|15400|15420|[0-9]{5})/);
-      if (vMatch) {
-        this.vendorNumber = vMatch[1];
-      }
-    }
-
-    // 2. Detect Year & Month from filename
-    const monthNames = [
-      'january', 'february', 'march', 'april', 'may', 'june',
-      'july', 'august', 'september', 'october', 'november', 'december'
-    ];
-    let foundMonth: number | undefined;
-    let foundYear: number | undefined;
-
-    monthNames.forEach((m, idx) => {
-      if (fn.includes(m)) {
-        foundMonth = idx + 1;
-      }
-    });
-
-    if (!foundMonth) {
-      const shortMonths = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-      shortMonths.forEach((m, idx) => {
-        const reg = new RegExp(`(^|[^a-z])${m}([^a-z]|$)`, 'i');
-        if (reg.test(fn)) {
-          foundMonth = idx + 1;
-        }
-      });
-    }
-
-    const yMatch = fn.match(/\b(20[1-3][0-9])\b/);
-    if (yMatch) {
-      foundYear = parseInt(yMatch[1], 10);
-    }
-
-    if (foundMonth || foundYear) {
-      const mName = foundMonth ? monthNames[foundMonth - 1].charAt(0).toUpperCase() + monthNames[foundMonth - 1].slice(1) : '';
-      const label = `Detected Period: ${mName} ${foundYear || ''}`.trim();
-      this.detectedPeriodLabel.set(label);
-      if (foundYear) this.selectedYear = foundYear.toString();
-      if (foundMonth) this.selectedMonth = foundMonth.toString();
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      this.fileContent.set(text);
-
-      // If year/month was not detected in filename, check first lines of text
-      if ((!foundYear || !foundMonth) && text) {
-        const snippet = text.slice(0, 1500).toLowerCase();
-        if (!foundYear) {
-          const sYearMatch = snippet.match(/\b(20[1-3][0-9])\b/);
-          if (sYearMatch) {
-            foundYear = parseInt(sYearMatch[1], 10);
-            this.selectedYear = foundYear.toString();
-          }
-        }
-        if (!foundMonth) {
-          monthNames.forEach((m, idx) => {
-            if (snippet.includes(m)) {
-              foundMonth = idx + 1;
-              this.selectedMonth = foundMonth.toString();
-            }
-          });
-        }
-        if (foundMonth || foundYear) {
-          const mName = foundMonth ? monthNames[foundMonth - 1].charAt(0).toUpperCase() + monthNames[foundMonth - 1].slice(1) : '';
-          this.detectedPeriodLabel.set(`Detected: ${mName} ${foundYear || ''}`.trim());
-        }
-      }
-    };
-    reader.readAsText(file);
-  }
-
-  formatPeriod(month?: number, year?: number): string {
+  private handleFilesAdded(files: File[]) {
+    this.batchSummary.set(null);
     const monthNames = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
-    const m = month ? monthNames[month - 1] : (this.selectedMonth !== 'AUTO' ? monthNames[parseInt(this.selectedMonth, 10) - 1] : '');
-    const y = year || (this.selectedYear !== 'AUTO' ? this.selectedYear : new Date().getFullYear());
-    return m ? `${m} ${y}` : `${y}`;
+    const shortMonths = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+    files.forEach((file) => {
+      const fn = file.name.toLowerCase();
+
+      // 1. Detect Vendor
+      let vNum: string | undefined;
+      const vMatch = fn.match(/(15371|15529|15400|15420|[0-9]{5})/);
+      if (vMatch) vNum = vMatch[1];
+
+      // 2. Detect Year & Month
+      let foundMonth: number | undefined;
+      let foundYear: number | undefined;
+
+      monthNames.forEach((m, idx) => {
+        if (fn.includes(m.toLowerCase())) foundMonth = idx + 1;
+      });
+
+      if (!foundMonth) {
+        shortMonths.forEach((m, idx) => {
+          const reg = new RegExp(`(^|[^a-z])${m}([^a-z]|$)`, 'i');
+          if (reg.test(fn)) foundMonth = idx + 1;
+        });
+      }
+
+      const yMatch = fn.match(/\b(20[1-3][0-9])\b/);
+      if (yMatch) foundYear = parseInt(yMatch[1], 10);
+
+      const periodText = foundMonth && foundYear
+        ? `${monthNames[foundMonth - 1]} ${foundYear}`
+        : (foundYear ? `${foundYear}` : '');
+
+      const queueItem = {
+        id: Math.random().toString(36).substring(2, 9),
+        file,
+        name: file.name,
+        size: file.size,
+        content: '',
+        vendorNumber: vNum,
+        year: foundYear,
+        month: foundMonth,
+        periodText,
+        status: 'READY' as const,
+      };
+
+      // Read file content
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        queueItem.content = (event.target?.result as string) || '';
+      };
+      reader.readAsText(file);
+
+      this.fileQueue.update((q) => [...q, queueItem]);
+    });
   }
 
-  lineCount(): number {
-    if (!this.fileContent()) return 0;
-    return this.fileContent().split(/\r?\n/).filter(l => l.trim().length > 0).length;
+  removeItem(index: number) {
+    this.fileQueue.update((q) => q.filter((_, i) => i !== index));
   }
 
-  fileSnippet(): string {
-    if (!this.fileContent()) return '';
-    return this.fileContent().split(/\r?\n/).slice(0, 10).join('\n');
+  clearQueue() {
+    this.fileQueue.set([]);
+    this.batchSummary.set(null);
   }
 
-  submitUpload() {
-    if (!this.fileContent() || !this.selectedFile()) return;
+  lineCount(content?: string): number {
+    if (!content) return 0;
+    return content.split(/\r?\n/).filter((l) => l.trim().length > 0).length;
+  }
+
+  fileSnippet(content?: string): string {
+    if (!content) return '';
+    return content.split(/\r?\n/).slice(0, 10).join('\n');
+  }
+
+  async submitAllUploads() {
+    const queue = this.fileQueue();
+    if (queue.length === 0 || this.uploading()) return;
 
     this.uploading.set(true);
-    this.uploadResult.set(null);
+    this.batchSummary.set(null);
+    this.uploadProgress.set({ current: 0, total: queue.length, percentage: 0 });
 
-    const yearNum = this.selectedYear !== 'AUTO' ? parseInt(this.selectedYear, 10) : undefined;
-    const monthNum = this.selectedMonth !== 'AUTO' ? parseInt(this.selectedMonth, 10) : undefined;
+    let successfulFiles = 0;
+    let totalValidRows = 0;
 
-    this.api
-      .uploadPosData({
-        fileContent: this.fileContent(),
-        fileName: this.selectedFile()?.name || 'pos_file.csv',
-        retailerCode: this.selectedRetailer !== 'AUTO' ? this.selectedRetailer : undefined,
-        vendorNumber: this.vendorNumber.trim() || undefined,
-        reportingYear: yearNum,
-        reportingMonth: monthNum,
-      })
-      .subscribe({
-        next: (res) => {
-          this.uploading.set(false);
-          this.uploadResult.set(res);
-          if (res.success) {
-            this.state.showToast('Uploaded Successfully', 'success');
-            this.state.refreshAll();
-          } else {
-            this.state.showToast(res.message || 'Upload failed', 'error');
-          }
-        },
-        error: (err) => {
-          this.uploading.set(false);
-          this.uploadResult.set({ success: false, message: err.message || 'Upload failed' });
+    for (let i = 0; i < queue.length; i++) {
+      const item = queue[i];
+      
+      // Update item to UPLOADING
+      this.fileQueue.update((items) =>
+        items.map((it, idx) => (idx === i ? { ...it, status: 'UPLOADING' } : it))
+      );
+
+      const fileContent = item.content || (await this.readFileAsync(item.file));
+      const yearToUse = this.selectedYear !== 'AUTO' ? parseInt(this.selectedYear, 10) : item.year;
+      const monthToUse = this.selectedMonth !== 'AUTO' ? parseInt(this.selectedMonth, 10) : item.month;
+      const vendorToUse = this.vendorNumber.trim() || item.vendorNumber;
+
+      try {
+        const res = await new Promise<UploadResponse>((resolve, reject) => {
+          this.api
+            .uploadPosData({
+              fileContent,
+              fileName: item.name,
+              retailerCode: this.selectedRetailer !== 'AUTO' ? this.selectedRetailer : undefined,
+              vendorNumber: vendorToUse,
+              reportingYear: yearToUse,
+              reportingMonth: monthToUse,
+            })
+            .subscribe({
+              next: (response) => resolve(response),
+              error: (err) => reject(err),
+            });
+        });
+
+        if (res.success) {
+          successfulFiles++;
+          totalValidRows += res.validRows || 0;
+          this.fileQueue.update((items) =>
+            items.map((it, idx) => (idx === i ? { ...it, status: 'SUCCESS', result: res } : it))
+          );
+        } else {
+          this.fileQueue.update((items) =>
+            items.map((it, idx) =>
+              idx === i ? { ...it, status: 'ERROR', errorMessage: res.message || 'Validation failed' } : it
+            )
+          );
         }
-      });
+      } catch (err: any) {
+        this.fileQueue.update((items) =>
+          items.map((it, idx) =>
+            idx === i ? { ...it, status: 'ERROR', errorMessage: err.message || 'Upload error' } : it
+          )
+        );
+      }
+
+      // Update progress
+      const current = i + 1;
+      const percentage = Math.round((current / queue.length) * 100);
+      this.uploadProgress.set({ current, total: queue.length, percentage });
+    }
+
+    this.uploading.set(false);
+    this.batchSummary.set({
+      totalFiles: queue.length,
+      successfulFiles,
+      totalValidRows,
+    });
+
+    if (successfulFiles > 0) {
+      this.state.showToast(`Uploaded ${successfulFiles} files successfully (${totalValidRows} rows)`, 'success');
+      this.state.refreshAll();
+    } else {
+      this.state.showToast('Upload finished with errors', 'error');
+    }
+  }
+
+  private readFileAsync(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve((e.target?.result as string) || '');
+      reader.onerror = (e) => reject(e);
+      reader.readAsText(file);
+    });
   }
 }
