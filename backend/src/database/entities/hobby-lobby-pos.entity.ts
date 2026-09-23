@@ -89,11 +89,79 @@ export class HobbyLobbyPOS {
   @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
   sales12M?: string | null;
 
-  @Column({ type: 'jsonb', nullable: true })
-  monthlySalesLY?: any;
+  // 12 Last Year (LY) Monthly Sales Columns
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  lyJanSales?: string | null;
 
-  @Column({ type: 'jsonb', nullable: true })
-  monthlySalesCY?: any;
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  lyFebSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  lyMarSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  lyAprSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  lyMaySales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  lyJunSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  lyJulSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  lyAugSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  lySepSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  lyOctSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  lyNovSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  lyDecSales?: string | null;
+
+  // 12 Current Year (CY) Monthly Sales Columns
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  cyJanSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  cyFebSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  cyMarSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  cyAprSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  cyMaySales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  cyJunSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  cyJulSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  cyAugSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  cySepSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  cyOctSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  cyNovSales?: string | null;
+
+  @Column({ type: 'decimal', precision: 14, scale: 4, nullable: true })
+  cyDecSales?: string | null;
 
   @Column({ type: 'int', nullable: true })
   reportingYear?: number | null;

@@ -41,8 +41,32 @@ export interface HobbyLobbyRow {
   sales2Yr?: number | string;
   salesLY?: number | string;
   sales12M?: number | string;
-  monthlySalesLY?: Record<string, number>;
-  monthlySalesCY?: Record<string, number>;
+  // 12 LY Month fields
+  lyJanSales?: number | string;
+  lyFebSales?: number | string;
+  lyMarSales?: number | string;
+  lyAprSales?: number | string;
+  lyMaySales?: number | string;
+  lyJunSales?: number | string;
+  lyJulSales?: number | string;
+  lyAugSales?: number | string;
+  lySepSales?: number | string;
+  lyOctSales?: number | string;
+  lyNovSales?: number | string;
+  lyDecSales?: number | string;
+  // 12 CY Month fields
+  cyJanSales?: number | string;
+  cyFebSales?: number | string;
+  cyMarSales?: number | string;
+  cyAprSales?: number | string;
+  cyMaySales?: number | string;
+  cyJunSales?: number | string;
+  cyJulSales?: number | string;
+  cyAugSales?: number | string;
+  cySepSales?: number | string;
+  cyOctSales?: number | string;
+  cyNovSales?: number | string;
+  cyDecSales?: number | string;
   reportingYear?: number;
   reportingMonth?: number;
   uploadedBy?: string;
@@ -85,6 +109,7 @@ export interface UploadResponse {
   success: boolean;
   batchId?: string;
   retailerCode?: RetailerCode;
+  departmentTag?: string;
   totalRows?: number;
   validRows?: number;
   errorRows?: number;

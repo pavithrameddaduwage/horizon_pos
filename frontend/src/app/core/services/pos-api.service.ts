@@ -156,6 +156,7 @@ export class PosApiService {
     fileContent: string;
     fileName: string;
     retailerCode?: string;
+    departmentTag?: string;
     familyOverride?: string;
   }): Observable<UploadResponse> {
     return this.http.post<UploadResponse>(`${this.baseUrl}/upload`, payload).pipe(

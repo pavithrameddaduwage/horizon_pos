@@ -33,8 +33,17 @@ export class HobbyLobbyService {
     fileName: string,
     fileSizeBytes: number,
     uploadedBy: string = 'portal_user',
-  ): Promise<{ batchId: string; success: boolean; totalRows: number; validRows: number; errorRows: number }> {
-    const parseResult: HobbyLobbyParseResult = parseHobbyLobbyCSV(csvContent, { fileName });
+    departmentOverride?: string,
+  ): Promise<{
+    batchId: string;
+    retailerCode: RetailerCode;
+    departmentTag?: string;
+    success: boolean;
+    totalRows: number;
+    validRows: number;
+    errorRows: number;
+  }> {
+    const parseResult: HobbyLobbyParseResult = parseHobbyLobbyCSV(csvContent, { fileName, departmentOverride });
 
     if (!parseResult.success || parseResult.data.length === 0) {
       throw new Error(`Failed to parse Hobby Lobby CSV: ${parseResult.errors.map(e => e.error).join('; ') || 'No valid rows found'}`);
@@ -45,6 +54,7 @@ export class HobbyLobbyService {
     await queryRunner.startTransaction();
 
     const uploadedAt = new Date();
+    const finalDepartmentTag = departmentOverride || parseResult.detectedDepartments.join(', ') || 'General';
 
     try {
       // 1. Create Ingestion Batch
@@ -52,7 +62,7 @@ export class HobbyLobbyService {
         retailerCode: RetailerCode.HOBBY_LOBBY,
         fileName,
         fileSizeBytes,
-        departmentTag: parseResult.detectedDepartments.join(', '),
+        departmentTag: finalDepartmentTag,
         totalRows: parseResult.totalRows,
         validRows: parseResult.validRows,
         errorRows: parseResult.errorRows,
@@ -91,8 +101,32 @@ export class HobbyLobbyService {
             sales2Yr: row.sales2Yr?.toString(),
             salesLY: row.salesLY?.toString(),
             sales12M: row.sales12M?.toString(),
-            monthlySalesLY: row.monthlySalesLY,
-            monthlySalesCY: row.monthlySalesCY,
+            // 12 LY Month columns
+            lyJanSales: row.lyJanSales?.toString(),
+            lyFebSales: row.lyFebSales?.toString(),
+            lyMarSales: row.lyMarSales?.toString(),
+            lyAprSales: row.lyAprSales?.toString(),
+            lyMaySales: row.lyMaySales?.toString(),
+            lyJunSales: row.lyJunSales?.toString(),
+            lyJulSales: row.lyJulSales?.toString(),
+            lyAugSales: row.lyAugSales?.toString(),
+            lySepSales: row.lySepSales?.toString(),
+            lyOctSales: row.lyOctSales?.toString(),
+            lyNovSales: row.lyNovSales?.toString(),
+            lyDecSales: row.lyDecSales?.toString(),
+            // 12 CY Month columns
+            cyJanSales: row.cyJanSales?.toString(),
+            cyFebSales: row.cyFebSales?.toString(),
+            cyMarSales: row.cyMarSales?.toString(),
+            cyAprSales: row.cyAprSales?.toString(),
+            cyMaySales: row.cyMaySales?.toString(),
+            cyJunSales: row.cyJunSales?.toString(),
+            cyJulSales: row.cyJulSales?.toString(),
+            cyAugSales: row.cyAugSales?.toString(),
+            cySepSales: row.cySepSales?.toString(),
+            cyOctSales: row.cyOctSales?.toString(),
+            cyNovSales: row.cyNovSales?.toString(),
+            cyDecSales: row.cyDecSales?.toString(),
             reportingYear: row.reportingYear,
             reportingMonth: row.reportingMonth,
             uploadedBy,
@@ -107,10 +141,12 @@ export class HobbyLobbyService {
       await queryRunner.manager.save(IngestionBatch, savedBatch);
 
       await queryRunner.commitTransaction();
-      this.logger.log(`Ingested ${parseResult.validRows} Hobby Lobby rows for batch ${savedBatch.id}`);
+      this.logger.log(`Ingested ${parseResult.validRows} Hobby Lobby rows for batch ${savedBatch.id} (Department: ${finalDepartmentTag})`);
 
       return {
         batchId: savedBatch.id,
+        retailerCode: RetailerCode.HOBBY_LOBBY,
+        departmentTag: finalDepartmentTag,
         success: true,
         totalRows: parseResult.totalRows,
         validRows: parseResult.validRows,

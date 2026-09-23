@@ -38,6 +38,7 @@ export class UploadGatewayController {
 
     const retailerCode = body.retailerCode || body.retailer;
     const familyOverride = body.familyOverride || body.family;
+    const departmentTag = body.departmentTag || body.department;
     const uploadedBy = body.uploadedBy || 'portal_user';
 
     return this.uploadGatewayService.processUpload(
@@ -47,6 +48,7 @@ export class UploadGatewayController {
       retailerCode && retailerCode !== 'AUTO' ? retailerCode : undefined,
       uploadedBy,
       familyOverride && familyOverride !== 'AUTO' ? familyOverride : undefined,
+      departmentTag && departmentTag.trim().length > 0 ? departmentTag.trim() : undefined,
     );
   }
 }

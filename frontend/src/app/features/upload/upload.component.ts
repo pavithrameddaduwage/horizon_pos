@@ -196,16 +196,42 @@ import { UploadResponse } from '../../core/models/pos.model';
                 </select>
               </div>
 
-              <!-- Department Input -->
+              <!-- Department Input with Quick Presets -->
               <div>
                 <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
-                  Department
+                  Department / Dept Tag
                 </label>
                 <input 
                   type="text" 
                   class="input-control" 
-                  placeholder="Optional department tag" 
+                  placeholder="e.g., Dept 117 - SAUNY SHEDECK, 120" 
                   [(ngModel)]="departmentTag" />
+                
+                <!-- Quick Department Preset Badges -->
+                <div class="flex items-center gap-1.5 flex-wrap" style="margin-top: 0.4rem;">
+                  <span style="font-size: 0.6875rem; color: #64748b; font-weight: 600;">Presets:</span>
+                  <button 
+                    type="button" 
+                    class="dept-preset-pill" 
+                    [class.active]="departmentTag === 'Dept 117 - SAUNY SHEDECK'"
+                    (click)="departmentTag = 'Dept 117 - SAUNY SHEDECK'">
+                    Dept 117
+                  </button>
+                  <button 
+                    type="button" 
+                    class="dept-preset-pill" 
+                    [class.active]="departmentTag === 'Dept 120 - ART SUPPLIES'"
+                    (click)="departmentTag = 'Dept 120 - ART SUPPLIES'">
+                    Dept 120
+                  </button>
+                  <button 
+                    type="button" 
+                    class="dept-preset-pill" 
+                    [class.active]="departmentTag === 'Dept 123 - JEWELRY'"
+                    (click)="departmentTag = 'Dept 123 - JEWELRY'">
+                    Dept 123
+                  </button>
+                </div>
               </div>
 
               <!-- Submit Button -->
@@ -248,6 +274,10 @@ import { UploadResponse } from '../../core/models/pos.model';
                 <div class="flex items-center justify-between">
                   <span style="color: #475569; font-weight: 600;">Retailer:</span>
                   <span style="color: #0f172a; font-weight: 800;">{{ uploadResult()?.retailerCode || selectedRetailer || 'HOBBY_LOBBY' }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span style="color: #475569; font-weight: 600;">Department:</span>
+                  <span style="color: #0f172a; font-weight: 800;">{{ uploadResult()?.departmentTag || departmentTag || 'Auto-Extracted' }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                   <span style="color: #475569; font-weight: 600;">Valid Rows:</span>
@@ -293,6 +323,27 @@ import { UploadResponse } from '../../core/models/pos.model';
       padding: 0.25rem 0.85rem;
       font-size: 0.75rem;
       font-weight: 700;
+    }
+    .dept-preset-pill {
+      background: #f8fafc;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 0.15rem 0.5rem;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .dept-preset-pill:hover {
+      background: #f1f5f9;
+      color: #1e293b;
+      border-color: #cbd5e1;
+    }
+    .dept-preset-pill.active {
+      background: #eff6ff;
+      color: #2563eb;
+      border-color: #93c5fd;
     }
     .code-preview-box {
       background: #090d16;
@@ -360,6 +411,16 @@ export class UploadComponent {
     this.selectedFile.set(file);
     this.uploadResult.set(null);
 
+    // If filename has department clue, pre-populate if empty
+    const fn = file.name.toLowerCase();
+    if (!this.departmentTag) {
+      if (fn.includes('117') || fn.includes('sauny')) {
+        this.departmentTag = 'Dept 117 - SAUNY SHEDECK';
+      } else if (fn.includes('120')) {
+        this.departmentTag = 'Dept 120 - ART SUPPLIES';
+      }
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
@@ -389,6 +450,7 @@ export class UploadComponent {
         fileContent: this.fileContent(),
         fileName: this.selectedFile()?.name || 'pos_file.csv',
         retailerCode: this.selectedRetailer !== 'AUTO' ? this.selectedRetailer : undefined,
+        departmentTag: this.departmentTag.trim() || undefined,
       })
       .subscribe({
         next: (res) => {

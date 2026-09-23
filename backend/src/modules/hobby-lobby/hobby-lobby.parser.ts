@@ -78,8 +78,32 @@ export interface HobbyLobbyParsedRow {
   sales2Yr?: number;
   salesLY?: number;
   sales12M?: number;
-  monthlySalesLY?: Record<string, number>;
-  monthlySalesCY?: Record<string, number>;
+  // 12 LY Month columns
+  lyJanSales?: number;
+  lyFebSales?: number;
+  lyMarSales?: number;
+  lyAprSales?: number;
+  lyMaySales?: number;
+  lyJunSales?: number;
+  lyJulSales?: number;
+  lyAugSales?: number;
+  lySepSales?: number;
+  lyOctSales?: number;
+  lyNovSales?: number;
+  lyDecSales?: number;
+  // 12 CY Month columns
+  cyJanSales?: number;
+  cyFebSales?: number;
+  cyMarSales?: number;
+  cyAprSales?: number;
+  cyMaySales?: number;
+  cyJunSales?: number;
+  cyJulSales?: number;
+  cyAugSales?: number;
+  cySepSales?: number;
+  cyOctSales?: number;
+  cyNovSales?: number;
+  cyDecSales?: number;
   reportingYear?: number;
   reportingMonth?: number;
 }
@@ -97,7 +121,7 @@ export interface HobbyLobbyParseResult {
 
 export function parseHobbyLobbyCSV(
   csvContent: string,
-  options?: { defaultYear?: number; defaultMonth?: number; fileName?: string }
+  options?: { defaultYear?: number; defaultMonth?: number; fileName?: string; departmentOverride?: string }
 ): HobbyLobbyParseResult {
   const meta = extractHobbyLobbyMetadataFromFileName(options?.fileName);
   const effectiveYear = meta.year || options?.defaultYear || new Date().getFullYear();
@@ -172,21 +196,39 @@ export function parseHobbyLobbyCSV(
       return;
     }
 
-    const deptTag = buyerNumber
+    const deptTag = options?.departmentOverride || (buyerNumber
       ? (buyerName ? `Dept ${buyerNumber} - ${buyerName}` : `Dept ${buyerNumber}`)
-      : (buyerName || 'General');
+      : (buyerName || 'General'));
 
     departmentsSet.add(deptTag);
 
-    const monthlySalesLY: Record<string, number> = {};
-    const monthlySalesCY: Record<string, number> = {};
+    // Extract all 12 LY month sales
+    const lyJan = cleanNumber(findValue(row, headerKeys, ['LY Jan Sales', 'LY Jan Sal', 'LY_Jan_Sales', 'LYJan', 'LY Jan']));
+    const lyFeb = cleanNumber(findValue(row, headerKeys, ['LY Feb Sales', 'LY Feb Sal', 'LY_Feb_Sales', 'LYFeb', 'LY Feb']));
+    const lyMar = cleanNumber(findValue(row, headerKeys, ['LY Mar Sales', 'LY Mar Sal', 'LY_Mar_Sales', 'LYMar', 'LY Mar']));
+    const lyApr = cleanNumber(findValue(row, headerKeys, ['LY Apr Sales', 'LY Apr Sal', 'LY_Apr_Sales', 'LYApr', 'LY Apr']));
+    const lyMay = cleanNumber(findValue(row, headerKeys, ['LY May Sales', 'LY May Sal', 'LY_May_Sales', 'LYMay', 'LY May']));
+    const lyJun = cleanNumber(findValue(row, headerKeys, ['LY Jun Sales', 'LY Jun Sal', 'LY_Jun_Sales', 'LYJun', 'LY Jun']));
+    const lyJul = cleanNumber(findValue(row, headerKeys, ['LY Jul Sales', 'LY Jul Sal', 'LY_Jul_Sales', 'LYJul', 'LY Jul']));
+    const lyAug = cleanNumber(findValue(row, headerKeys, ['LY Aug Sales', 'LY Aug Sal', 'LY_Aug_Sales', 'LYAug', 'LY Aug']));
+    const lySep = cleanNumber(findValue(row, headerKeys, ['LY Sep Sales', 'LY Sep Sal', 'LY_Sep_Sales', 'LYSep', 'LY Sep']));
+    const lyOct = cleanNumber(findValue(row, headerKeys, ['LY Oct Sales', 'LY Oct Sal', 'LY_Oct_Sales', 'LYOct', 'LY Oct']));
+    const lyNov = cleanNumber(findValue(row, headerKeys, ['LY Nov Sales', 'LY Nov Sal', 'LY_Nov_Sales', 'LYNov', 'LY Nov']));
+    const lyDec = cleanNumber(findValue(row, headerKeys, ['LY Dec Sales', 'LY Dec Sal', 'LY_Dec_Sales', 'LYDec', 'LY Dec']));
 
-    MONTH_KEYS.forEach((m) => {
-      const lyVal = findValue(row, headerKeys, [`LY ${m} Sales`, `LY ${m} Sal`, `LY_${m}_Sales`, `LY${m}`]);
-      const cyVal = findValue(row, headerKeys, [`CY ${m} Sales`, `CY ${m} Sal`, `CY_${m}_Sales`, `CY${m}`]);
-      monthlySalesLY[m] = cleanNumber(lyVal);
-      monthlySalesCY[m] = cleanNumber(cyVal);
-    });
+    // Extract all 12 CY month sales
+    const cyJan = cleanNumber(findValue(row, headerKeys, ['CY Jan Sales', 'CY Jan Sal', 'CY_Jan_Sales', 'CYJan', 'CY Jan']));
+    const cyFeb = cleanNumber(findValue(row, headerKeys, ['CY Feb Sales', 'CY Feb Sal', 'CY_Feb_Sales', 'CYFeb', 'CY Feb']));
+    const cyMar = cleanNumber(findValue(row, headerKeys, ['CY Mar Sales', 'CY Mar Sal', 'CY_Mar_Sales', 'CYMar', 'CY Mar']));
+    const cyApr = cleanNumber(findValue(row, headerKeys, ['CY Apr Sales', 'CY Apr Sal', 'CY_Apr_Sales', 'CYApr', 'CY Apr']));
+    const cyMay = cleanNumber(findValue(row, headerKeys, ['CY May Sales', 'CY May Sal', 'CY_May_Sales', 'CYMay', 'CY May']));
+    const cyJun = cleanNumber(findValue(row, headerKeys, ['CY Jun Sales', 'CY Jun Sal', 'CY_Jun_Sales', 'CYJun', 'CY Jun']));
+    const cyJul = cleanNumber(findValue(row, headerKeys, ['CY Jul Sales', 'CY Jul Sal', 'CY_Jul_Sales', 'CYJul', 'CY Jul']));
+    const cyAug = cleanNumber(findValue(row, headerKeys, ['CY Aug Sales', 'CY Aug Sal', 'CY_Aug_Sales', 'CYAug', 'CY Aug']));
+    const cySep = cleanNumber(findValue(row, headerKeys, ['CY Sep Sales', 'CY Sep Sal', 'CY_Sep_Sales', 'CYSep', 'CY Sep']));
+    const cyOct = cleanNumber(findValue(row, headerKeys, ['CY Oct Sales', 'CY Oct Sal', 'CY_Oct_Sales', 'CYOct', 'CY Oct']));
+    const cyNov = cleanNumber(findValue(row, headerKeys, ['CY Nov Sales', 'CY Nov Sal', 'CY_Nov_Sales', 'CYNov', 'CY Nov']));
+    const cyDec = cleanNumber(findValue(row, headerKeys, ['CY Dec Sales', 'CY Dec Sal', 'CY_Dec_Sales', 'CYDec', 'CY Dec']));
 
     const sellDownRaw = findValue(row, headerKeys, ['Sell Down', 'SellDown', 'SD']);
     const sellDown = cleanNumber(sellDownRaw);
@@ -221,8 +263,30 @@ export function parseHobbyLobbyCSV(
       sales2Yr,
       salesLY,
       sales12M,
-      monthlySalesLY,
-      monthlySalesCY,
+      lyJanSales: lyJan,
+      lyFebSales: lyFeb,
+      lyMarSales: lyMar,
+      lyAprSales: lyApr,
+      lyMaySales: lyMay,
+      lyJunSales: lyJun,
+      lyJulSales: lyJul,
+      lyAugSales: lyAug,
+      lySepSales: lySep,
+      lyOctSales: lyOct,
+      lyNovSales: lyNov,
+      lyDecSales: lyDec,
+      cyJanSales: cyJan,
+      cyFebSales: cyFeb,
+      cyMarSales: cyMar,
+      cyAprSales: cyApr,
+      cyMaySales: cyMay,
+      cyJunSales: cyJun,
+      cyJulSales: cyJul,
+      cyAugSales: cyAug,
+      cySepSales: cySep,
+      cyOctSales: cyOct,
+      cyNovSales: cyNov,
+      cyDecSales: cyDec,
       reportingYear: effectiveYear,
       reportingMonth: effectiveMonth,
     };
