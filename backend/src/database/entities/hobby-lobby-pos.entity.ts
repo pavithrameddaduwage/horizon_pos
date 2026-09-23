@@ -15,6 +15,7 @@ import { IngestionBatch } from './ingestion-batch.entity';
 @Index(['buyerNumber'])
 @Index(['itemNumber'])
 @Index(['reportingYear', 'reportingMonth'])
+@Index(['vendorNumber', 'itemNumber', 'reportingYear', 'reportingMonth'], { unique: true })
 @Index(['uploadedAt'])
 export class HobbyLobbyPOS {
   @PrimaryGeneratedColumn('uuid')

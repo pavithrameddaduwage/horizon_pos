@@ -119,69 +119,135 @@ export class HobbyLobbyService {
 
       const savedBatch = await queryRunner.manager.save(IngestionBatch, batch);
 
-      // 2. Insert rows in chunks of 500
+      // 2. In-memory deduplicate rows by composite key: (vendorNumber + itemNumber + reportingYear + reportingMonth)
+      const uniqueRowsMap = new Map<string, typeof parseResult.data[0]>();
+      for (const row of parseResult.data) {
+        const rowVendor = row.vendorNumber || finalVendorNumber;
+        const rowYear = row.reportingYear || finalYear;
+        const rowMonth = row.reportingMonth || finalMonth;
+        const compositeKey = `${rowVendor}_${row.itemNumber}_${rowYear}_${rowMonth}`.toLowerCase();
+        uniqueRowsMap.set(compositeKey, row);
+      }
+      const deduplicatedRows = Array.from(uniqueRowsMap.values());
+
+      // 3. Upsert rows in chunks of 500
       const chunkSize = 500;
-      for (let i = 0; i < parseResult.data.length; i += chunkSize) {
-        const chunk = parseResult.data.slice(i, i + chunkSize);
-        const entityChunk = chunk.map((row) =>
-          queryRunner.manager.create(HobbyLobbyPOS, {
-            batchId: savedBatch.id,
-            company: row.company,
-            vendorNumber: row.vendorNumber,
-            vendorName: row.vendorName,
-            buyerNumber: row.buyerNumber,
-            buyerName: row.buyerName,
-            department: row.department,
-            itemNumber: row.itemNumber,
-            itemDescription: row.itemDescription,
-            vendorStockNumber: row.vendorStockNumber,
-            size: row.size,
-            color: row.color,
-            sellDown: row.sellDown?.toString(),
-            onHand: row.onHand,
-            onOrder: row.onOrder,
-            firstCost: row.firstCost?.toString(),
-            preprice: row.preprice?.toString(),
-            retailPrice: row.retailPrice?.toString(),
-            sales2Yr: row.sales2Yr?.toString(),
-            salesLY: row.salesLY?.toString(),
-            sales12M: row.sales12M?.toString(),
-            // 12 LY Month columns
-            lyJanSales: row.lyJanSales?.toString(),
-            lyFebSales: row.lyFebSales?.toString(),
-            lyMarSales: row.lyMarSales?.toString(),
-            lyAprSales: row.lyAprSales?.toString(),
-            lyMaySales: row.lyMaySales?.toString(),
-            lyJunSales: row.lyJunSales?.toString(),
-            lyJulSales: row.lyJulSales?.toString(),
-            lyAugSales: row.lyAugSales?.toString(),
-            lySepSales: row.lySepSales?.toString(),
-            lyOctSales: row.lyOctSales?.toString(),
-            lyNovSales: row.lyNovSales?.toString(),
-            lyDecSales: row.lyDecSales?.toString(),
-            // 12 CY Month columns
-            cyJanSales: row.cyJanSales?.toString(),
-            cyFebSales: row.cyFebSales?.toString(),
-            cyMarSales: row.cyMarSales?.toString(),
-            cyAprSales: row.cyAprSales?.toString(),
-            cyMaySales: row.cyMaySales?.toString(),
-            cyJunSales: row.cyJunSales?.toString(),
-            cyJulSales: row.cyJulSales?.toString(),
-            cyAugSales: row.cyAugSales?.toString(),
-            cySepSales: row.cySepSales?.toString(),
-            cyOctSales: row.cyOctSales?.toString(),
-            cyNovSales: row.cyNovSales?.toString(),
-            cyDecSales: row.cyDecSales?.toString(),
-            reportingYear: row.reportingYear,
-            reportingMonth: row.reportingMonth,
-            uploadedBy,
-            uploadedAt,
-          })
-        );
-        await queryRunner.manager.save(HobbyLobbyPOS, entityChunk);
+      for (let i = 0; i < deduplicatedRows.length; i += chunkSize) {
+        const chunk = deduplicatedRows.slice(i, i + chunkSize);
+        const entityChunk = chunk.map((row) => ({
+          batchId: savedBatch.id,
+          company: row.company || null,
+          vendorNumber: row.vendorNumber || finalVendorNumber,
+          vendorName: row.vendorName || null,
+          buyerNumber: row.buyerNumber || null,
+          buyerName: row.buyerName || null,
+          department: row.department || finalDepartmentTag,
+          itemNumber: row.itemNumber,
+          itemDescription: row.itemDescription || null,
+          vendorStockNumber: row.vendorStockNumber || null,
+          size: row.size || null,
+          color: row.color || null,
+          sellDown: row.sellDown?.toString() || null,
+          onHand: row.onHand || 0,
+          onOrder: row.onOrder || 0,
+          firstCost: row.firstCost?.toString() || null,
+          preprice: row.preprice?.toString() || null,
+          retailPrice: row.retailPrice?.toString() || null,
+          sales2Yr: row.sales2Yr?.toString() || null,
+          salesLY: row.salesLY?.toString() || null,
+          sales12M: row.sales12M?.toString() || null,
+          // 12 LY Month columns
+          lyJanSales: row.lyJanSales?.toString() || null,
+          lyFebSales: row.lyFebSales?.toString() || null,
+          lyMarSales: row.lyMarSales?.toString() || null,
+          lyAprSales: row.lyAprSales?.toString() || null,
+          lyMaySales: row.lyMaySales?.toString() || null,
+          lyJunSales: row.lyJunSales?.toString() || null,
+          lyJulSales: row.lyJulSales?.toString() || null,
+          lyAugSales: row.lyAugSales?.toString() || null,
+          lySepSales: row.lySepSales?.toString() || null,
+          lyOctSales: row.lyOctSales?.toString() || null,
+          lyNovSales: row.lyNovSales?.toString() || null,
+          lyDecSales: row.lyDecSales?.toString() || null,
+          // 12 CY Month columns
+          cyJanSales: row.cyJanSales?.toString() || null,
+          cyFebSales: row.cyFebSales?.toString() || null,
+          cyMarSales: row.cyMarSales?.toString() || null,
+          cyAprSales: row.cyAprSales?.toString() || null,
+          cyMaySales: row.cyMaySales?.toString() || null,
+          cyJunSales: row.cyJunSales?.toString() || null,
+          cyJulSales: row.cyJulSales?.toString() || null,
+          cyAugSales: row.cyAugSales?.toString() || null,
+          cySepSales: row.cySepSales?.toString() || null,
+          cyOctSales: row.cyOctSales?.toString() || null,
+          cyNovSales: row.cyNovSales?.toString() || null,
+          cyDecSales: row.cyDecSales?.toString() || null,
+          reportingYear: row.reportingYear || finalYear,
+          reportingMonth: row.reportingMonth || finalMonth,
+          uploadedBy,
+          uploadedAt,
+        }));
+
+        await queryRunner.manager
+          .createQueryBuilder()
+          .insert()
+          .into(HobbyLobbyPOS)
+          .values(entityChunk)
+          .orUpdate(
+            [
+              'company',
+              'vendor_name',
+              'buyer_number',
+              'buyer_name',
+              'department',
+              'item_description',
+              'vendor_stock_number',
+              'size',
+              'color',
+              'sell_down',
+              'on_hand',
+              'on_order',
+              'first_cost',
+              'preprice',
+              'retail_price',
+              'sales_2yr',
+              'sales_ly',
+              'sales_12m',
+              'ly_jan_sales',
+              'ly_feb_sales',
+              'ly_mar_sales',
+              'ly_apr_sales',
+              'ly_may_sales',
+              'ly_jun_sales',
+              'ly_jul_sales',
+              'ly_aug_sales',
+              'ly_sep_sales',
+              'ly_oct_sales',
+              'ly_nov_sales',
+              'ly_dec_sales',
+              'cy_jan_sales',
+              'cy_feb_sales',
+              'cy_mar_sales',
+              'cy_apr_sales',
+              'cy_may_sales',
+              'cy_jun_sales',
+              'cy_jul_sales',
+              'cy_aug_sales',
+              'cy_sep_sales',
+              'cy_oct_sales',
+              'cy_nov_sales',
+              'cy_dec_sales',
+              'batch_id',
+              'uploaded_by',
+              'uploaded_at',
+            ],
+            ['vendor_number', 'item_number', 'reporting_year', 'reporting_month'],
+          )
+          .execute();
       }
 
-      // 3. Mark batch completed
+      // 4. Mark batch completed
+      savedBatch.validRows = deduplicatedRows.length;
       savedBatch.status = BatchStatus.COMPLETED;
       await queryRunner.manager.save(IngestionBatch, savedBatch);
 
