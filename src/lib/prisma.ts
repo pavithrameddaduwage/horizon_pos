@@ -28,3 +28,12 @@ export const prisma =
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
+// Auto-trigger verification and table creation
+if (typeof window === 'undefined') {
+  import('./db-init').then(({ verifyAndInitDatabase }) => {
+    verifyAndInitDatabase().catch((err) => {
+      console.error('[DB] Initialization error:', err?.message || err);
+    });
+  });
+}
+
