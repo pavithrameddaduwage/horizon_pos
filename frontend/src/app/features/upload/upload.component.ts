@@ -35,7 +35,6 @@ import { UploadResponse } from '../../core/models/pos.model';
           </div>
           <div>
             <h3 style="font-size: 0.95rem; font-weight: 800; color: #0f172a;">Hobby Lobby</h3>
-            <p style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">43-Col Monthly</p>
           </div>
         </div>
 
@@ -55,7 +54,6 @@ import { UploadResponse } from '../../core/models/pos.model';
           </div>
           <div>
             <h3 style="font-size: 0.95rem; font-weight: 800; color: #0f172a;">Five Below</h3>
-            <p style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">Weekly Families</p>
           </div>
         </div>
 
@@ -74,7 +72,6 @@ import { UploadResponse } from '../../core/models/pos.model';
           </div>
           <div>
             <h3 style="font-size: 0.95rem; font-weight: 800; color: #0f172a;">Kohl's</h3>
-            <p style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">EDI 852 / POS</p>
           </div>
         </div>
 
@@ -94,7 +91,6 @@ import { UploadResponse } from '../../core/models/pos.model';
           </div>
           <div>
             <h3 style="font-size: 0.95rem; font-weight: 800; color: #0f172a;">MSI POS</h3>
-            <p style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">Enterprise Feed</p>
           </div>
         </div>
 
@@ -196,7 +192,7 @@ import { UploadResponse } from '../../core/models/pos.model';
                 </select>
               </div>
 
-              <!-- Vendor Number Input with Quick Presets -->
+              <!-- Vendor Number Input -->
               <div>
                 <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
                   Vendor Number
@@ -204,34 +200,8 @@ import { UploadResponse } from '../../core/models/pos.model';
                 <input 
                   type="text" 
                   class="input-control" 
-                  placeholder="e.g., 15371, 15529" 
+                  placeholder="Optional vendor number" 
                   [(ngModel)]="vendorNumber" />
-                
-                <!-- Quick Vendor Preset Badges -->
-                <div class="flex items-center gap-1.5 flex-wrap" style="margin-top: 0.4rem;">
-                  <span style="font-size: 0.6875rem; color: #64748b; font-weight: 600;">Presets:</span>
-                  <button 
-                    type="button" 
-                    class="dept-preset-pill" 
-                    [class.active]="vendorNumber === '15371'"
-                    (click)="vendorNumber = '15371'">
-                    15371
-                  </button>
-                  <button 
-                    type="button" 
-                    class="dept-preset-pill" 
-                    [class.active]="vendorNumber === '15529'"
-                    (click)="vendorNumber = '15529'">
-                    15529
-                  </button>
-                  <button 
-                    type="button" 
-                    class="dept-preset-pill" 
-                    [class.active]="vendorNumber === '15400'"
-                    (click)="vendorNumber = '15400'">
-                    15400
-                  </button>
-                </div>
               </div>
 
               <!-- Submit Button -->
