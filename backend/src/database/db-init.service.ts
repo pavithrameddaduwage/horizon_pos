@@ -1,5 +1,13 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Client } from 'pg';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Preload env vars from possible locations
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config();
 
 @Injectable()
 export class DbInitService {
@@ -11,6 +19,8 @@ export class DbInitService {
     const user = process.env.DW_USER || 'postgres';
     const password = process.env.DW_PASSWORD || '0006';
     const targetDb = process.env.DW_NAME || 'report_portal_db';
+
+    this.logger.log(`Checking database connection on ${host}:${port} as user "${user}"...`);
 
     const client = new Client({
       host,
@@ -28,18 +38,18 @@ export class DbInitService {
       );
 
       if (checkRes.rowCount === 0) {
-        this.logger.log(`Database "${targetDb}" does not exist. Creating...`);
-        // Identifier cannot be parameterized with $1 in CREATE DATABASE, must be quoted
+        this.logger.log(`Database "${targetDb}" does not exist. Creating now...`);
         const safeName = targetDb.replace(/"/g, '""');
         await client.query(`CREATE DATABASE "${safeName}"`);
         this.logger.log(`Database "${targetDb}" created successfully.`);
       } else {
-        this.logger.log(`Database "${targetDb}" verified.`);
+        this.logger.log(`Database "${targetDb}" already exists and is ready.`);
       }
     } catch (err: any) {
-      this.logger.warn(`Database verification notice: ${err.message}`);
+      this.logger.error(`Database initialization error: ${err.message}`, err.stack);
     } finally {
       await client.end().catch(() => {});
     }
   }
 }
+
