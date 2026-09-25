@@ -11,16 +11,28 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config();
 
+import { DbInitService } from './database/db-init.service';
+
 async function bootstrap() {
-  const logger = new Logger('HorizonBackend');
-  
+  const host = process.env.DW_HOST || 'localhost';
+  const port = parseInt(process.env.DW_PORT || '5432', 10);
+  const user = process.env.DW_USER || 'postgres';
+  const password = process.env.DW_PASSWORD || '';
+  const database = process.env.DW_NAME;
+
   console.log('\n====================================================');
   console.log(' [HORIZON POS] 🚀 Booting Horizon POS Backend');
-  console.log(` [HORIZON POS] DW_HOST:      ${process.env.DW_HOST || 'localhost'}`);
-  console.log(` [HORIZON POS] DW_PORT:      ${process.env.DW_PORT || '5432'}`);
-  console.log(` [HORIZON POS] DW_USER:      ${process.env.DW_USER || 'postgres'}`);
-  console.log(` [HORIZON POS] DW_NAME:      ${process.env.DW_NAME || 'report_portal_db'}`);
+  console.log(` [HORIZON POS] DW_HOST:      ${host}`);
+  console.log(` [HORIZON POS] DW_PORT:      ${port}`);
+  console.log(` [HORIZON POS] DW_USER:      ${user}`);
+  console.log(` [HORIZON POS] DW_NAME:      ${database}`);
   console.log('====================================================\n');
+
+  if (database) {
+    // Pre-boot: Ensure PostgreSQL database exists dynamically from .env
+    const initService = new DbInitService();
+    await initService.ensureDatabaseExists(host, port, user, password, database);
+  }
 
   const app = await NestFactory.create(AppModule, {
     logger: ['log', 'warn', 'error'],
@@ -32,10 +44,12 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const port = process.env.BACKEND_PORT || process.env.PORT || 4000;
-  await app.listen(port);
-  console.log(`\n [HORIZON POS] ✅ Server listening on http://localhost:${port}\n`);
+  const appPort = process.env.BACKEND_PORT || process.env.PORT || 4000;
+  await app.listen(appPort);
+  console.log(`\n [HORIZON POS] ✅ Server listening on http://localhost:${appPort}\n`);
 }
 
 bootstrap();
+
+
 

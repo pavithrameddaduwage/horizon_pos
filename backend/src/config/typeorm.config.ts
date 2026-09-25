@@ -17,10 +17,11 @@ export function getTypeOrmConfig(): TypeOrmModuleOptions {
   const host = process.env.DW_HOST || 'localhost';
   const port = parseInt(process.env.DW_PORT || '5432', 10);
   const username = process.env.DW_USER || 'postgres';
-  const password = process.env.DW_PASSWORD || '0006';
-  const database = process.env.DW_NAME || 'report_portal_db';
+  const password = process.env.DW_PASSWORD || '';
+  const database = process.env.DW_NAME || '';
 
   console.log(` [TYPEORM] 🔌 Initializing TypeORM pool for DB "${database}" at ${host}:${port}`);
+
 
   return {
     type: 'postgres',

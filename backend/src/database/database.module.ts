@@ -13,17 +13,21 @@ import { MsiPOS } from './entities/msi-pos.entity';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService, DbInitService],
-      useFactory: async (configService: ConfigService, initService: DbInitService) => {
+      useFactory: async (configService: ConfigService) => {
         const host = configService.get<string>('DW_HOST') || process.env.DW_HOST || 'localhost';
         const port = parseInt(configService.get<string>('DW_PORT') || process.env.DW_PORT || '5432', 10);
         const username = configService.get<string>('DW_USER') || process.env.DW_USER || 'postgres';
-        const password = configService.get<string>('DW_PASSWORD') ?? process.env.DW_PASSWORD ?? '0006';
-        const database = configService.get<string>('DW_NAME') || process.env.DW_NAME || 'report_portal_db';
+        const password = configService.get<string>('DW_PASSWORD') ?? process.env.DW_PASSWORD ?? '';
+        const database = configService.get<string>('DW_NAME') || process.env.DW_NAME || '';
 
-        // 1. Ensure the database exists on the PostgreSQL instance
-        await initService.ensureDatabaseExists(host, port, username, password, database);
+        const initService = new DbInitService();
+        if (database) {
+          // 1. Ensure the database exists on the PostgreSQL instance
+          await initService.ensureDatabaseExists(host, port, username, password, database);
+        }
 
         console.log(` [TYPEORM] 🔌 Initializing TypeORM schema & tables for DB "${database}" at ${host}:${port}`);
+
 
         // 2. Return TypeORM configuration with auto-synchronize to create all tables
         return {

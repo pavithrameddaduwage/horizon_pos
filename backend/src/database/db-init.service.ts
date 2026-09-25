@@ -24,8 +24,13 @@ export class DbInitService {
     const host = dbHost || process.env.DW_HOST || 'localhost';
     const port = dbPort || parseInt(process.env.DW_PORT || '5432', 10);
     const user = dbUser || process.env.DW_USER || 'postgres';
-    const password = dbPassword !== undefined ? dbPassword : (process.env.DW_PASSWORD || '0006');
-    const targetDb = dbName || process.env.DW_NAME || 'report_portal_db';
+    const password = dbPassword !== undefined ? dbPassword : (process.env.DW_PASSWORD || '');
+    const targetDb = dbName || process.env.DW_NAME;
+
+    if (!targetDb) {
+      this.logger.warn('No DW_NAME provided in environment; skipping DB auto-creation check.');
+      return;
+    }
 
     console.log('\n====================================================');
     console.log(' [DB-INIT] 🔍 Checking Database Existence');
@@ -41,6 +46,7 @@ export class DbInitService {
       password,
       database: 'postgres',
     });
+
 
     try {
       console.log(` [DB-INIT] Connecting to postgres server at ${host}:${port}...`);
