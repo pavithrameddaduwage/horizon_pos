@@ -15,10 +15,11 @@ dotenv.config();
 
 export function getTypeOrmConfig(): TypeOrmModuleOptions {
   const host = process.env.DW_HOST;
-  const port = process.env.DW_PORT ? parseInt(process.env.DW_PORT, 10) : undefined;
+  const port = process.env.DW_PORT ? parseInt(String(process.env.DW_PORT), 10) : 5432;
   const username = process.env.DW_USER;
-  const password = process.env.DW_PASSWORD;
+  const password = String(process.env.DW_PASSWORD ?? '');
   const database = process.env.DW_NAME;
+
 
   return {
     type: 'postgres',
