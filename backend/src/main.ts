@@ -14,11 +14,12 @@ dotenv.config();
 import { DbInitService } from './database/db-init.service';
 
 async function bootstrap() {
-  const host = process.env.DW_HOST || 'localhost';
-  const port = parseInt(process.env.DW_PORT || '5432', 10);
-  const user = process.env.DW_USER || 'postgres';
-  const password = process.env.DW_PASSWORD || '';
+  const host = process.env.DW_HOST;
+  const port = process.env.DW_PORT ? parseInt(process.env.DW_PORT, 10) : undefined;
+  const user = process.env.DW_USER;
+  const password = process.env.DW_PASSWORD;
   const database = process.env.DW_NAME;
+
 
   console.log('\n====================================================');
   console.log(' [HORIZON POS] 🚀 Booting Horizon POS Backend');

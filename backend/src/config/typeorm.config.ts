@@ -14,14 +14,13 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config();
 
 export function getTypeOrmConfig(): TypeOrmModuleOptions {
-  const host = process.env.DW_HOST || 'localhost';
-  const port = parseInt(process.env.DW_PORT || '5432', 10);
-  const username = process.env.DW_USER || 'postgres';
-  const password = process.env.DW_PASSWORD || '';
-  const database = process.env.DW_NAME || '';
+  const host = process.env.DW_HOST;
+  const port = process.env.DW_PORT ? parseInt(process.env.DW_PORT, 10) : undefined;
+  const username = process.env.DW_USER;
+  const password = process.env.DW_PASSWORD;
+  const database = process.env.DW_NAME;
 
   console.log(` [TYPEORM] 🔌 Initializing TypeORM pool for DB "${database}" at ${host}:${port}`);
-
 
   return {
     type: 'postgres',
@@ -31,7 +30,7 @@ export function getTypeOrmConfig(): TypeOrmModuleOptions {
     password,
     database,
     entities: [IngestionBatch, HobbyLobbyPOS, FiveBelowPOS, KohlsPOS, MsiPOS],
-    synchronize: true, // Automatically synchronize schema
+    synchronize: true, // Automatically synchronize schema and create all tables
     logging: false,
     extra: {
       max: 20,
@@ -39,4 +38,5 @@ export function getTypeOrmConfig(): TypeOrmModuleOptions {
     },
   };
 }
+
 

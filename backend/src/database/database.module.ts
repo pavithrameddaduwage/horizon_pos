@@ -14,11 +14,13 @@ import { MsiPOS } from './entities/msi-pos.entity';
       imports: [ConfigModule],
       inject: [ConfigService, DbInitService],
       useFactory: async (configService: ConfigService) => {
-        const host = configService.get<string>('DW_HOST') || process.env.DW_HOST || 'localhost';
-        const port = parseInt(configService.get<string>('DW_PORT') || process.env.DW_PORT || '5432', 10);
-        const username = configService.get<string>('DW_USER') || process.env.DW_USER || 'postgres';
-        const password = configService.get<string>('DW_PASSWORD') ?? process.env.DW_PASSWORD ?? '';
-        const database = configService.get<string>('DW_NAME') || process.env.DW_NAME || '';
+        const host = configService.get<string>('DW_HOST') ?? process.env.DW_HOST;
+        const port = configService.get<string>('DW_PORT')
+          ? parseInt(configService.get<string>('DW_PORT')!, 10)
+          : (process.env.DW_PORT ? parseInt(process.env.DW_PORT, 10) : undefined);
+        const username = configService.get<string>('DW_USER') ?? process.env.DW_USER;
+        const password = configService.get<string>('DW_PASSWORD') ?? process.env.DW_PASSWORD;
+        const database = configService.get<string>('DW_NAME') ?? process.env.DW_NAME;
 
         const initService = new DbInitService();
         if (database) {
@@ -27,6 +29,7 @@ import { MsiPOS } from './entities/msi-pos.entity';
         }
 
         console.log(` [TYPEORM] 🔌 Initializing TypeORM schema & tables for DB "${database}" at ${host}:${port}`);
+
 
 
         // 2. Return TypeORM configuration with auto-synchronize to create all tables
