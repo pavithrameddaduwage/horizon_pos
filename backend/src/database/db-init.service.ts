@@ -14,12 +14,18 @@ dotenv.config();
 export class DbInitService {
   private readonly logger = new Logger('DatabaseInit');
 
-  async ensureDatabaseExists(): Promise<void> {
-    const host = process.env.DW_HOST || 'localhost';
-    const port = parseInt(process.env.DW_PORT || '5432', 10);
-    const user = process.env.DW_USER || 'postgres';
-    const password = process.env.DW_PASSWORD || '0006';
-    const targetDb = process.env.DW_NAME || 'report_portal_db';
+  async ensureDatabaseExists(
+    dbHost?: string,
+    dbPort?: number,
+    dbUser?: string,
+    dbPassword?: string,
+    dbName?: string,
+  ): Promise<void> {
+    const host = dbHost || process.env.DW_HOST || 'localhost';
+    const port = dbPort || parseInt(process.env.DW_PORT || '5432', 10);
+    const user = dbUser || process.env.DW_USER || 'postgres';
+    const password = dbPassword !== undefined ? dbPassword : (process.env.DW_PASSWORD || '0006');
+    const targetDb = dbName || process.env.DW_NAME || 'report_portal_db';
 
     console.log('\n====================================================');
     console.log(' [DB-INIT] 🔍 Checking Database Existence');
@@ -63,5 +69,6 @@ export class DbInitService {
     }
   }
 }
+
 
 
