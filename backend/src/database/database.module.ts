@@ -17,8 +17,9 @@ import { MsiPOS } from './entities/msi-pos.entity';
         const host = configService.get<string>('DW_HOST') ?? process.env.DW_HOST;
         const port = configService.get<number>('DW_PORT') ?? (process.env.DW_PORT ? parseInt(process.env.DW_PORT, 10) : undefined);
         const username = configService.get<string>('DW_USER') ?? process.env.DW_USER;
-        const password = configService.get<string>('DW_PASSWORD') ?? process.env.DW_PASSWORD;
+        const password = configService.get<string>('DW_PASSWORD') ?? process.env.DW_PASSWORD ?? '';
         const database = configService.get<string>('DW_NAME') ?? process.env.DW_NAME;
+
 
         const initService = new DbInitService();
         if (database && host && username) {

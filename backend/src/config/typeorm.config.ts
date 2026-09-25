@@ -19,8 +19,9 @@ export function getTypeOrmConfig(): TypeOrmModuleOptions {
     host: process.env.DW_HOST,
     port: process.env.DW_PORT ? parseInt(process.env.DW_PORT, 10) : undefined,
     username: process.env.DW_USER,
-    password: process.env.DW_PASSWORD,
+    password: process.env.DW_PASSWORD ?? '',
     database: process.env.DW_NAME,
+
     entities: [IngestionBatch, HobbyLobbyPOS, FiveBelowPOS, KohlsPOS, MsiPOS],
     synchronize: true, // Automatically synchronize schema and create all tables
     logging: false,
