@@ -28,11 +28,8 @@ import { MsiPOS } from './entities/msi-pos.entity';
           await initService.ensureDatabaseExists(host, port, username, password, database);
         }
 
-        console.log(` [TYPEORM] 🔌 Initializing TypeORM schema & tables for DB "${database}" at ${host}:${port}`);
-
-
-
         // 2. Return TypeORM configuration with auto-synchronize to create all tables
+
         return {
           type: 'postgres',
           host,

@@ -32,14 +32,6 @@ export class DbInitService {
       return;
     }
 
-
-    console.log('\n====================================================');
-    console.log(' [DB-INIT] 🔍 Checking Database Existence');
-    console.log(` [DB-INIT] Host:       ${host}:${port}`);
-    console.log(` [DB-INIT] User:       ${user}`);
-    console.log(` [DB-INIT] Target DB:  ${targetDb}`);
-    console.log('====================================================');
-
     const client = new Client({
       host,
       port,
@@ -48,11 +40,8 @@ export class DbInitService {
       database: 'postgres',
     });
 
-
     try {
-      console.log(` [DB-INIT] Connecting to postgres server at ${host}:${port}...`);
       await client.connect();
-      console.log(` [DB-INIT] Connected to postgres server successfully.`);
 
       const checkRes = await client.query(
         'SELECT 1 FROM pg_database WHERE datname = $1',
@@ -60,15 +49,14 @@ export class DbInitService {
       );
 
       if (checkRes.rowCount === 0) {
-        console.log(` [DB-INIT] ⚡ Database "${targetDb}" does NOT exist. Creating now...`);
+        this.logger.log(`Database "${targetDb}" does not exist. Creating...`);
         const safeName = targetDb.replace(/"/g, '""');
         await client.query(`CREATE DATABASE "${safeName}"`);
-        console.log(` [DB-INIT] ✅ Database "${targetDb}" created successfully!`);
+        this.logger.log(`Database "${targetDb}" created successfully.`);
       } else {
-        console.log(` [DB-INIT] ✅ Database "${targetDb}" already exists.`);
+        this.logger.log(`Database "${targetDb}" verified.`);
       }
     } catch (err: any) {
-      console.error(` [DB-INIT] ❌ Error checking/creating database "${targetDb}":`, err.message);
       this.logger.error(`Database initialization error: ${err.message}`, err.stack);
       throw err;
     } finally {
@@ -76,6 +64,7 @@ export class DbInitService {
     }
   }
 }
+
 
 
 

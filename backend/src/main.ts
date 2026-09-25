@@ -14,20 +14,13 @@ dotenv.config();
 import { DbInitService } from './database/db-init.service';
 
 async function bootstrap() {
+  const logger = new Logger('HorizonBackend');
+
   const host = process.env.DW_HOST;
   const port = process.env.DW_PORT ? parseInt(process.env.DW_PORT, 10) : undefined;
   const user = process.env.DW_USER;
   const password = process.env.DW_PASSWORD;
   const database = process.env.DW_NAME;
-
-
-  console.log('\n====================================================');
-  console.log(' [HORIZON POS] 🚀 Booting Horizon POS Backend');
-  console.log(` [HORIZON POS] DW_HOST:      ${host}`);
-  console.log(` [HORIZON POS] DW_PORT:      ${port}`);
-  console.log(` [HORIZON POS] DW_USER:      ${user}`);
-  console.log(` [HORIZON POS] DW_NAME:      ${database}`);
-  console.log('====================================================\n');
 
   if (database) {
     // Pre-boot: Ensure PostgreSQL database exists dynamically from .env
@@ -47,10 +40,11 @@ async function bootstrap() {
 
   const appPort = process.env.BACKEND_PORT || process.env.PORT || 4000;
   await app.listen(appPort);
-  console.log(`\n [HORIZON POS] ✅ Server listening on http://localhost:${appPort}\n`);
+  logger.log(`Horizon POS Microservices running on port ${appPort}`);
 }
 
 bootstrap();
+
 
 
 
