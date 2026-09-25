@@ -14,14 +14,10 @@ import { MsiPOS } from './entities/msi-pos.entity';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
-
         const host = configService.get<string>('DW_HOST') ?? process.env.DW_HOST;
-        const port = configService.get<string>('DW_PORT')
-          ? parseInt(String(configService.get<string>('DW_PORT')), 10)
-          : (process.env.DW_PORT ? parseInt(String(process.env.DW_PORT), 10) : 5432);
+        const port = configService.get<number>('DW_PORT') ?? (process.env.DW_PORT ? parseInt(process.env.DW_PORT, 10) : undefined);
         const username = configService.get<string>('DW_USER') ?? process.env.DW_USER;
-        const rawPassword = configService.get<string>('DW_PASSWORD') ?? process.env.DW_PASSWORD;
-        const password = String(rawPassword ?? '');
+        const password = configService.get<string>('DW_PASSWORD') ?? process.env.DW_PASSWORD;
         const database = configService.get<string>('DW_NAME') ?? process.env.DW_NAME;
 
         const initService = new DbInitService();
@@ -40,14 +36,14 @@ import { MsiPOS } from './entities/msi-pos.entity';
           database,
           entities: [IngestionBatch, HobbyLobbyPOS, FiveBelowPOS, KohlsPOS, MsiPOS],
           synchronize: true, // Automatically synchronize schema and create all tables
-          logging: ['error', 'warn'],
+          logging: false,
           extra: {
             max: 20,
             connectionTimeoutMillis: 10000,
           },
         };
-
       },
+
     }),
     TypeOrmModule.forFeature([
       IngestionBatch,

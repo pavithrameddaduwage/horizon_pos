@@ -14,20 +14,13 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config();
 
 export function getTypeOrmConfig(): TypeOrmModuleOptions {
-  const host = process.env.DW_HOST;
-  const port = process.env.DW_PORT ? parseInt(String(process.env.DW_PORT), 10) : 5432;
-  const username = process.env.DW_USER;
-  const password = String(process.env.DW_PASSWORD ?? '');
-  const database = process.env.DW_NAME;
-
-
   return {
     type: 'postgres',
-    host,
-    port,
-    username,
-    password,
-    database,
+    host: process.env.DW_HOST,
+    port: process.env.DW_PORT ? parseInt(process.env.DW_PORT, 10) : undefined,
+    username: process.env.DW_USER,
+    password: process.env.DW_PASSWORD,
+    database: process.env.DW_NAME,
     entities: [IngestionBatch, HobbyLobbyPOS, FiveBelowPOS, KohlsPOS, MsiPOS],
     synchronize: true, // Automatically synchronize schema and create all tables
     logging: false,
@@ -37,6 +30,7 @@ export function getTypeOrmConfig(): TypeOrmModuleOptions {
     },
   };
 }
+
 
 
 
