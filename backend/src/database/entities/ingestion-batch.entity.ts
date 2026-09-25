@@ -29,10 +29,11 @@ export enum BatchStatus {
   PARTIALLY_COMPLETED = 'PARTIALLY_COMPLETED',
 }
 
-@Entity('IngestionBatch')
+@Entity('ingestion_batch')
 @Index(['retailerCode', 'uploadedAt'])
 @Index(['status'])
 export class IngestionBatch {
+
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

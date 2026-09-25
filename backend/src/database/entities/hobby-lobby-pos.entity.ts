@@ -9,8 +9,9 @@ import {
 } from 'typeorm';
 import { IngestionBatch } from './ingestion-batch.entity';
 
-@Entity('HobbyLobbyPOS')
+@Entity('hobby_lobby_pos')
 @Index(['batchId'])
+
 @Index(['vendorNumber'])
 @Index(['buyerNumber'])
 @Index(['itemNumber'])
