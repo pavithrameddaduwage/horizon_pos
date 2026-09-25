@@ -12,8 +12,9 @@ import { MsiPOS } from './entities/msi-pos.entity';
   imports: [
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      inject: [ConfigService, DbInitService],
+      inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
+
         const host = configService.get<string>('DW_HOST') ?? process.env.DW_HOST;
         const port = configService.get<string>('DW_PORT')
           ? parseInt(configService.get<string>('DW_PORT')!, 10)
