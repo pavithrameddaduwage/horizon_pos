@@ -21,11 +21,13 @@ export class DbInitService {
     dbPassword?: string,
     dbName?: string,
   ): Promise<void> {
-    const host = dbHost || process.env.DW_HOST;
-    const port = dbPort || (process.env.DW_PORT ? parseInt(process.env.DW_PORT, 10) : undefined);
-    const user = dbUser || process.env.DW_USER;
-    const password = dbPassword ?? process.env.DW_PASSWORD ?? '';
-    const targetDb = dbName || process.env.DW_NAME;
+    const host = dbHost || process.env.DB_HOST || process.env.DW_HOST;
+    const rawPort = dbPort || process.env.DB_PORT || process.env.DW_PORT;
+    const port = rawPort ? parseInt(String(rawPort), 10) : undefined;
+    const user = dbUser || process.env.DB_USER || process.env.DW_USER;
+    const password = dbPassword ?? process.env.DB_PASSWORD ?? process.env.DW_PASSWORD ?? '';
+    const targetDb = dbName || process.env.DB_NAME || process.env.DW_NAME;
+
 
 
 

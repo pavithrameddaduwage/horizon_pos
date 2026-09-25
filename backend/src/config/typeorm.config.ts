@@ -16,11 +16,12 @@ dotenv.config();
 export function getTypeOrmConfig(): TypeOrmModuleOptions {
   return {
     type: 'postgres',
-    host: process.env.DW_HOST,
-    port: process.env.DW_PORT ? parseInt(process.env.DW_PORT, 10) : undefined,
-    username: process.env.DW_USER,
-    password: process.env.DW_PASSWORD ?? '',
-    database: process.env.DW_NAME,
+    host: process.env.DB_HOST || process.env.DW_HOST,
+    port: (process.env.DB_PORT || process.env.DW_PORT) ? parseInt(process.env.DB_PORT || process.env.DW_PORT!, 10) : undefined,
+    username: process.env.DB_USER || process.env.DW_USER,
+    password: process.env.DB_PASSWORD || process.env.DW_PASSWORD || '',
+    database: process.env.DB_NAME || process.env.DW_NAME,
+
 
     entities: [IngestionBatch, HobbyLobbyPOS, FiveBelowPOS, KohlsPOS, MsiPOS],
     synchronize: true, // Automatically synchronize schema and create all tables

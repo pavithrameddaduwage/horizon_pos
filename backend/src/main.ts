@@ -16,11 +16,13 @@ import { DbInitService } from './database/db-init.service';
 async function bootstrap() {
   const logger = new Logger('HorizonBackend');
 
-  const host = process.env.DW_HOST;
-  const port = process.env.DW_PORT ? parseInt(process.env.DW_PORT, 10) : undefined;
-  const user = process.env.DW_USER;
-  const password = process.env.DW_PASSWORD;
-  const database = process.env.DW_NAME;
+  const host = process.env.DB_HOST || process.env.DW_HOST;
+  const rawPort = process.env.DB_PORT || process.env.DW_PORT;
+  const port = rawPort ? parseInt(String(rawPort), 10) : undefined;
+  const user = process.env.DB_USER || process.env.DW_USER;
+  const password = process.env.DB_PASSWORD || process.env.DW_PASSWORD || '';
+  const database = process.env.DB_NAME || process.env.DW_NAME;
+
 
   if (database) {
     // Pre-boot: Ensure PostgreSQL database exists dynamically from .env

@@ -14,11 +14,13 @@ import { MsiPOS } from './entities/msi-pos.entity';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
-        const host = configService.get<string>('DW_HOST') ?? process.env.DW_HOST;
-        const port = configService.get<number>('DW_PORT') ?? (process.env.DW_PORT ? parseInt(process.env.DW_PORT, 10) : undefined);
-        const username = configService.get<string>('DW_USER') ?? process.env.DW_USER;
-        const password = configService.get<string>('DW_PASSWORD') ?? process.env.DW_PASSWORD ?? '';
-        const database = configService.get<string>('DW_NAME') ?? process.env.DW_NAME;
+        const host = configService.get<string>('DB_HOST') || configService.get<string>('DW_HOST') || process.env.DB_HOST || process.env.DW_HOST;
+        const rawPort = configService.get<string>('DB_PORT') || configService.get<string>('DW_PORT') || process.env.DB_PORT || process.env.DW_PORT;
+        const port = rawPort ? parseInt(String(rawPort), 10) : undefined;
+        const username = configService.get<string>('DB_USER') || configService.get<string>('DW_USER') || process.env.DB_USER || process.env.DW_USER;
+        const password = configService.get<string>('DB_PASSWORD') || configService.get<string>('DW_PASSWORD') || process.env.DB_PASSWORD || process.env.DW_PASSWORD || '';
+        const database = configService.get<string>('DB_NAME') || configService.get<string>('DW_NAME') || process.env.DB_NAME || process.env.DW_NAME;
+
 
 
         const initService = new DbInitService();
