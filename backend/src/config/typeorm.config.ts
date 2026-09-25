@@ -20,6 +20,7 @@ export function getTypeOrmConfig(): TypeOrmModuleOptions {
   const password = process.env.DW_PASSWORD || '0006';
   const database = process.env.DW_NAME || 'report_portal_db';
 
+  console.log(` [TYPEORM] 🔌 Initializing TypeORM pool for DB "${database}" at ${host}:${port}`);
 
   return {
     type: 'postgres',
@@ -37,3 +38,4 @@ export function getTypeOrmConfig(): TypeOrmModuleOptions {
     },
   };
 }
+
